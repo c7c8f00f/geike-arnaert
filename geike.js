@@ -15,7 +15,6 @@ async function play(cid) {
     const connection = await client.channels.filter(channel => channel.type === "voice").filter(channel => channel['id'] === cid).first().join();
     console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     var dispatcher;
-
     if (Math.random() >= 0.30) {
         console.log("Playing Zoutelande");
         dispatcher = connection.playStream(
@@ -33,7 +32,6 @@ async function play(cid) {
         dispatcher = connection.playStream(
             ytdl('https://www.youtube.com/watch?v=YMNY2NcSMm8', {filter: 'audioonly'}));
     }
-    connection.on("debug", message => console.log(message))
 
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
