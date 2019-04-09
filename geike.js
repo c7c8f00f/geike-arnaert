@@ -165,6 +165,8 @@ client.on('message', msg => {
 
             dispatcher.setVolume(2);
         });
+    } else if (msg.content === '!geike kartoffelschnaps') {
+        msg.react(msg.guild.emojis.get('557997588482228255'));
     }
 });
 client.login(config.loginToken);
