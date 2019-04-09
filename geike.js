@@ -175,6 +175,7 @@ client.on('message', msg => {
             dispatcher.setVolume(2);
         });
     } else if (msg.content === '!geike kartoffelschnaps') {
+        if (msg.guild.id != '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
     }
 });
