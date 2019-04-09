@@ -20,11 +20,13 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
+const os = require("os");
 const help = ['herlaad configuratie ➡️ Herlaad de configuratie van Geike',
                 'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
                 'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
                 'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen',
-                'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luisterd'];
+                'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luisterd',
+                'waar ben je ➡️Geike vertelt op welke server ze draait'];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -181,7 +183,7 @@ client.on('message', msg => {
         msg.reply("\n" + help.sort().join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
-            if (channel.type != 'voice' || !channel['members'].get(config.userId)) return;
+            if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
 
             let conn = channel.connection;
             if (!conn) return;
@@ -192,8 +194,13 @@ client.on('message', msg => {
             dispatcher.setVolume(2);
         });
     } else if (msg.content === '!geike kartoffelschnaps') {
-        if (msg.guild.id != '210075118716715019') return;
+        if (msg.guild.id !== '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
+    } else if (msg.content === '!geike waar ben je') {
+        msg.reply(os.hostname());
+    } else if (msg.content === '!geike luister teef') {
+        msg.react('😡');
+        msg.react('🖕');
     }
 });
 client.login(config.loginToken);
