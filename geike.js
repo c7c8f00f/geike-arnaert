@@ -118,6 +118,44 @@ async function disconnect(channel) {
     connection.disconnect()
 }
 
+async function doReply(msg, reply) {
+    let roles = msg.member.roles; // Collection<Snowflake, Role>
+    let roleIds = [];
+    roles.forEach(role => {
+        roleIds.add(role.getKey().id);
+    });
+
+    // Sanity check if there is a single role assigned to the member.
+    if (roleIds.size() === 0) {
+        msg.reply(reply);
+    }
+
+    // Retrieve all the roles that are on the server (and are assigned to a member)
+    let members = msg.guild.members;
+    let memberRoles = [];
+    members.forEach(member => {
+        member.getKey().roles.forEach(role => {
+            memberRoles.add(role.id);
+        });
+    });
+
+    // Nasty loop to check how often a role is present in the role array.
+    for (var i = 0; i < roleIds.size(); i++) {
+        var count = 0;
+        for (var k = 0; k < memberRoles.size(); k++) {
+            if (roleIds[i] === memberRoles[k]) {
+                count++;
+            }
+        }
+        if (count === 1) { // If only the member has this tag, send the message to this tag
+            msg.channel.send(msg.guild.roles.get(roleIds[i]) + '\n' + reply);
+        }
+    }
+
+    // If the code comes to here, there is no unique role for the member, thus simply replying.
+    msg.reply(reply);
+}
+
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
@@ -163,28 +201,28 @@ client.on('message', msg => {
             if (ytdl.validateURL(info[2])) {
                 config.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
                 config.songsTotal += frequencies[info[1]];
-                msg.reply("Oké, ik ga het " + info[1] + " spelen!");
+                msg.doReply(msg, "Oké, ik ga het " + info[1] + " spelen!");
             } else {
-                msg.reply("Leugens! Dit is geen echte YT URL!");
+                msg.doReply(msg, "Leugens! Dit is geen echte YT URL!");
             }
         } else {
-            msg.reply("Geen idee wat je bedoelt...");
+            msg.doReply(msg, "Geen idee wat je bedoelt...");
         }
     } else if (msg.content === '!geike geef configuratie weer') {
         let censoredConfig = {};
         Object.assign(censoredConfig, config);
         delete censoredConfig.loginToken;
-        msg.reply(JSON.stringify(censoredConfig, null, 2));
+        msg.doReply(msg, JSON.stringify(censoredConfig, null, 2));
     } else if (msg.content === '!geike stop!') {
         msg.guild.channels.forEach(channel => {
             if (channel.type === "voice" && channel['members'].get(config.userId) !== undefined) {
                 msg.react('🙄');
-                msg.reply('Oké 😞');
+                msg.doReply(msg, 'Oké 😞');
                 disconnect(channel);
             }
         });
     } else if (msg.content === '!geike help') {
-        msg.reply("\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
+        msg.doReply(msg, "\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
             if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
@@ -201,7 +239,7 @@ client.on('message', msg => {
         if (msg.guild.id !== '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
     } else if (msg.content === '!geike waar ben je') {
-        msg.reply(os.hostname());
+        msg.doReply(msg, os.hostname());
     } else if (msg.content === '!geike luister teef') {
         msg.react('😡');
         msg.react('🖕');
