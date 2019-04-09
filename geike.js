@@ -1,5 +1,31 @@
+const defaultConfig = {
+    songs: [
+         {title: 'Zoutelande',     p: 0.30, file: '/usr/local/geike/zoutelande.mp3'},
+         {title: 'Frankfurt Oder', p: 0.30, file: '/usr/local/geike/frankfurt-oder.mp3'},
+         {title: 'Blof Grips',     p: 0.20, ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
+         {title: 'OOF',            p: 0.20, ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
+    ],
+
+    voiceStreamOptions: {passes: 2},
+    ytdlOptions: {filter: 'audioonly'}
+};
+
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
+const fs = require('fs');
+
+const configLocation = '/etc/geike.conf';
+let configFile = fs.readFileSync(configLocation, {flag: 'w+', encoding: 'utf8'});
+var config;
+if (configFile) {
+    config = JSON.parse(configFile);
+} else {
+    config = defaultConfig;
+    fs.writeFile(configLocation, JSON.stringify(config), {encoding: 'utf8'}, err => {
+        if (err) console.log('Unable to save default config: ' + err);
+        else console.log('Saved default config');
+    });
+}
 
 const client = new Discord.Client();
 
@@ -11,27 +37,36 @@ Array.prototype.diff = function(a) {
     return this.filter(function(i) {return a.indexOf(i) < 0;});
 };
 
+function findSong() {
+    var cuml = 0;
+    var q = Math.random();
+
+    for (var i = 0; i < config.songs.length; ++i) {
+        const song = config.songs[i];
+        cuml += song.p || 0;
+        if (q <= cuml) return song;
+    }
+
+    return config.songs[config.songs.length - 1];
+}
+
+function playSong(conn, song) {
+    console.log('Playing ' + song.title);
+    if ('file' in song) {
+        return conn.playFile(song.file, config.voiceStreamOptions);
+    } else if ('ytdl' in song) {
+        return conn.playStream(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
+    } else {
+        console.log("Don't know how to play " + JSON.stringify(song));
+        return undefined;
+    }
+}
+
 async function play(cid) {
     const connection = await client.channels.filter(channel => channel.type === "voice").filter(channel => channel['id'] === cid).first().join();
     console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
-    var dispatcher;
-    if (Math.random() >= 0.30) {
-        console.log("Playing Zoutelande");
-        dispatcher = connection.playStream(
-            ytdl('https://www.youtube.com/watch?v=N0OLEgc-Glk', {filter: 'audioonly'}));
-    } else if (Math.random() >= 0.30) {
-        console.log("Playing Frankfurt Oder");
-        dispatcher = connection.playStream(
-            ytdl('https://www.youtube.com/watch?v=Mg3CdijJe24', {filter: 'audioonly'}));
-    } else if (Math.random() >= 0.5) {
-        console.log("Playing Blof Grips");
-        dispatcher = connection.playStream(
-            ytdl('https://www.youtube.com/watch?v=b6vpW-21c0w', {filter: 'audioonly'}));
-    } else {
-        console.log("Playing OOF");
-        dispatcher = connection.playStream(
-            ytdl('https://www.youtube.com/watch?v=YMNY2NcSMm8', {filter: 'audioonly'}));
-    }
+    let dispatcher = playSong(connection, findSong());
+    if (!dispatcher) return;
 
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
