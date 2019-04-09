@@ -1,23 +1,26 @@
 const defaultConfig = {
     songs: [
-         {title: 'Zoutelande',     p: 0.30, file: '/usr/local/geike/zoutelande.mp3'},
-         {title: 'Frankfurt Oder', p: 0.30, file: '/usr/local/geike/frankfurt-oder.mp3'},
-         {title: 'Blof Grips',     p: 0.20, ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
-         {title: 'OOF',            p: 0.20, ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
+         {title: 'Zoutelande',     p: 0.70,  file: '/usr/local/geike/zoutelande.mp3'},
+         {title: 'Frankfurt Oder', p: 0.21,  file: '/usr/local/geike/frankfurt-oder.mp3'},
+         {title: 'Blof Grips',     p: 0.045, ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
+         {title: 'OOF',            p: 0.045, ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
     ],
 
     voiceStreamOptions: {passes: 2},
-    ytdlOptions: {filter: 'audioonly'}
+    ytdlOptions: {filter: 'audioonly'},
+
+    loginToken: 'secret',
+    userId: '563365336758616094'
 };
 
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 
-const configLocation = '/etc/geike.conf';
-let configFile = fs.readFileSync(configLocation, {flag: 'w+', encoding: 'utf8'});
+const configLocation = '/etc/geike/geike.conf';
 var config;
-if (configFile) {
+if (fs.existsSync(configLocation)) {
+    let configFile = fs.readFileSync(configLocation, {encoding: 'utf8'});
     config = JSON.parse(configFile);
 } else {
     config = defaultConfig;
@@ -93,7 +96,7 @@ client.on('ready', () => {
         empty_channels.forEach(channel => previous_empty.push(channel));
         empty_channels = [];
         grabChannels().forEach(channel => {
-            if (channel['members'].size === 1 && channel['members'].get('563365336758616094') !== undefined) {
+            if (channel['members'].size === 1 && channel['members'].get(config.userId) !== undefined) {
                 console.log("I'm the only one left in " + channel.name + " (" + channel.guild + ")");
                 disconnect(channel)
             }
@@ -109,4 +112,4 @@ client.on('ready', () => {
 
     }, 1000);
 });
-client.login('NTYzMzY1MzM2NzU4NjE2MDk0.XKYQ7Q.vTfSFIObDiYp_2_EI2QnOlbE8YQ');
+client.login(config.loginToken);
