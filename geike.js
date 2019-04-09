@@ -26,7 +26,7 @@ const help = [
         'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
         'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
         'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen',
-        'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luisterd',
+        'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luistert',
         'waar ben je ➡️Geike vertelt op welke server ze draait',
         'kun je dit ook {vaak | soms | zelden} spelen __YT URL__ ➡️Geike voegt een nieuw nummer aan haar bibliotheek toe'
 ];
