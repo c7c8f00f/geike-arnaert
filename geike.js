@@ -28,7 +28,8 @@ const help = [
         'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen',
         'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luistert',
         'waar ben je ➡ ️Geike vertelt op welke server ze draait',
-        'kun je dit ook {vaak | soms | zelden} spelen __YT URL__ ➡️ Geike voegt een nieuw nummer aan haar bibliotheek toe'
+        'kun je dit ook {vaak | soms | zelden} spelen __YT URL__ ➡️ Geike voegt een nieuw nummer aan haar bibliotheek toe',
+        'wat kan je allemaal spelen ➡️ Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak'
 ];
 
 const configLocation = '/etc/geike/geike.conf';
@@ -204,6 +205,19 @@ client.on('message', msg => {
     } else if (msg.content === '!geike luister teef') {
         msg.react('😡');
         msg.react('🖕');
+    } else if (msg.content === '!geike wat kan je allemaal spelen') {
+        msg.channel.send(new Discord.RichEmbed()
+            .setColor([75, 83, 75])
+            .setTitle('Nummers die ik kan spelen')
+            .setDescription(config.songs
+                .map(s =>
+                    s.title + ' — ' + s.p
+                    + ' (' + (frequencies[s.p] / config.songsTotal * 100).toFixed() + '%)'
+                )
+                .join('\n')
+            )
+            .setFooter('Ik kan ' + config.songs.length + ' nummers spelen')
+        );
     }
 });
 client.login(config.loginToken);
