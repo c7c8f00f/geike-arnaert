@@ -146,9 +146,9 @@ client.on('message', msg => {
         msg.reply(JSON.stringify(censoredConfig, null, 2));
     } else if (msg.content === '!geike stop!') {
         msg.guild.channels.forEach(channel => {
-            if (channel['members'].get(config.userId) !== undefined) {
+            if (channel.type === "voice" && channel['members'].get(config.userId) !== undefined) {
                 msg.react('🙄');
-                msg.reply('Okay 😞')
+                msg.reply('Oké 😞');
                 disconnect(channel);
             }
         });
