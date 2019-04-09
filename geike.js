@@ -27,7 +27,7 @@ const help = [
         'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
         'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen',
         'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luistert',
-        'waar ben je ➡ ️Geike vertelt op welke server ze draait',
+        'waar ben je ➡️Geike vertelt op welke server ze draait',
         'kun je dit ook {vaak | soms | zelden} spelen __YT URL__ ➡️ Geike voegt een nieuw nummer aan haar bibliotheek toe',
         'wat kan je allemaal spelen ➡️ Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak',
         'kom {terug | hier} ➡️ haalt Geike terug in het huidige kanaal',
