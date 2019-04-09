@@ -29,8 +29,11 @@ const help = [
         'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luistert',
         'waar ben je ➡ ️Geike vertelt op welke server ze draait',
         'kun je dit ook {vaak | soms | zelden} spelen __YT URL__ ➡️ Geike voegt een nieuw nummer aan haar bibliotheek toe',
-        'wat kan je allemaal spelen ➡️ Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak'
+        'wat kan je allemaal spelen ➡️ Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak',
+        'kom {terug | hier} ➡️ haalt Geike terug in het huidige kanaal',
 ];
+
+let playing_guilds = [];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -91,8 +94,7 @@ function playSong(conn, song) {
     }
 }
 
-async function play(cid, playing_guilds) {
-    const channel = grabChannels().filter(channel => channel['id'] === cid).first();
+async function play(channel) {
     if (playing_guilds.contains(channel.guild)) {
         console.log("Already playing on " + channel.guild);
         return;
@@ -161,7 +163,6 @@ client.on('ready', () => {
 
     var previous_empty = [];
     var empty_channels = [];
-    var playing_guilds = [];
     setInterval(() => {
         previous_empty = [];
         empty_channels.forEach(channel => previous_empty.push(channel));
@@ -178,7 +179,7 @@ client.on('ready', () => {
         });
         previous_empty.diff(empty_channels).forEach(channel => {
             console.log("Target acquired in " + channel.name + " (" + channel.guild + ")");
-            play(channel['id'], playing_guilds);
+            play(channel);
         });
 
     }, 1000);
@@ -256,6 +257,11 @@ client.on('message', msg => {
             )
             .setFooter('Ik kan ' + config.songs.length + ' nummers spelen')
         );
+    } else if (msg.content === '!geike kom terug' || msg.content === '!geike kom hier') {
+        grabChannels().forEach(channel => {
+            if (!channel.members.has(msg.author.id)) return;
+            play(channel);
+        });
     }
 });
 client.login(config.loginToken);
