@@ -116,7 +116,7 @@ client.on('ready', () => {
         grabChannels().forEach(channel => {
             if (channel['members'].size === 1 && channel['members'].get(config.userId) !== undefined) {
                 console.log("I'm the only one left in " + channel.name + " (" + channel.guild + ")");
-                disconnect(channel)
+                disconnect(channel);
             }
 
             if (channel['members'].size === 0) {
@@ -144,6 +144,14 @@ client.on('message', msg => {
         Object.assign(censoredConfig, config);
         delete censoredConfig.loginToken;
         msg.reply(JSON.stringify(censoredConfig, null, 2));
+    } else if (msg.content === '!geike stop!') {
+        msg.guild().grabChannels().forEach(channel => {
+            if (channel['members'].get(config.userId) !== undefined) {
+                msg.react('🙄');
+                msg.reply('Okay 😞')
+                disconnect(channel);
+            }
+        });
     }
 });
 client.login(config.loginToken);
