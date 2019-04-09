@@ -17,6 +17,10 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
+const help = ['herlaad configuratie ➡️ Herlaad de configuratie van Geike',
+                'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
+                'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
+                'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen'];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -131,6 +135,8 @@ client.on('ready', () => {
 
     }, 1000);
 });
+
+// When adding a new command to Geike, please also add that command to the 'help' constant.
 client.on('message', msg => {
     if (msg.content === '!geike herlaad configuratie') {
         if (fs.existsSync(configLocation)) {
@@ -153,6 +159,8 @@ client.on('message', msg => {
                 disconnect(channel);
             }
         });
+    } else if (msg.content === '!geike help') {
+        msg.reply("\n" + help.join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
             if (channel.type != 'voice' || !channel['members'].get(config.userId)) return;
