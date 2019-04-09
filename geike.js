@@ -161,6 +161,20 @@ client.on('message', msg => {
         });
     } else if (msg.content === '!geike help') {
         msg.reply("\n" + help.join('\n'));
+    } else if (msg.content === '!geike SCHREEUW') {
+        msg.guild.channels.forEach(channel => {
+            if (channel.type != 'voice' || !channel['members'].get(config.userId)) return;
+
+            let conn = channel.connection;
+            if (!conn) return;
+
+            let dispatcher = conn.dispatcher;
+            if (!dispatcher) return;
+
+            dispatcher.setVolume(2);
+        });
+    } else if (msg.content === '!geike kartoffelschnaps') {
+        msg.react(msg.guild.emojis.get('557997588482228255'));
     }
 });
 client.login(config.loginToken);
