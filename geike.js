@@ -184,7 +184,7 @@ client.on('message', msg => {
             }
         });
     } else if (msg.content === '!geike help') {
-        msg.reply("\n" + help.sort().join('\n'));
+        msg.reply("\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
             if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
