@@ -112,4 +112,20 @@ client.on('ready', () => {
 
     }, 1000);
 });
+client.on('message', msg => {
+    if (msg.content === '!geike herlaad configuratie') {
+        if (fs.existsSync(configLocation)) {
+            let configFile = fs.readFileSync(configLocation, {encoding: 'utf8'});
+            config = JSON.parse(configFile);
+            msg.react('👍');
+        } else {
+            msg.react('👎');
+        }
+    } else if (msg.content === '!geike geef configuratie weer') {
+        let censoredConfig = {};
+        Object.assign(censoredConfig, config);
+        delete censoredConfig.loginToken;
+        msg.reply(JSON.stringify(censoredConfig, null, 2));
+    }
+});
 client.login(config.loginToken);
