@@ -17,7 +17,10 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
-const help = ['herlaad configuratie', 'geef configuratie weer', 'stop!', 'SCHREEUW'];
+const help = ['herlaad configuratie ➡️ Herlaad de configuratie van Geike',
+                'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
+                'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
+                'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen'];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -157,7 +160,9 @@ client.on('message', msg => {
             }
         });
     } else if (msg.content === '!geike help') {
-        msg.reply(help);
+        for (var i = 0; i < help.size(); i++) {
+            msg.reply(help[i]);
+        }
     }
 });
 client.login(config.loginToken);
