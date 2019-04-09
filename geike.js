@@ -16,6 +16,7 @@ const defaultConfig = {
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
+const process = require('process');
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -155,3 +156,7 @@ client.on('message', msg => {
     }
 });
 client.login(config.loginToken);
+
+process.on('SIGTERM', () => {
+    client.destroy().then(() => process.exit(0));
+});
