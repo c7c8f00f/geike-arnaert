@@ -160,9 +160,7 @@ client.on('message', msg => {
             }
         });
     } else if (msg.content === '!geike help') {
-        for (var i = 0; i < help.size(); i++) {
-            msg.reply(help[i]);
-        }
+        msg.reply("\n" + help.join('\n'));
     }
 });
 client.login(config.loginToken);
