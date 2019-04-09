@@ -17,6 +17,7 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
+const help = ['herlaad configuratie', 'geef configuratie weer', 'stop!', 'SCHREEUW'];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -131,6 +132,8 @@ client.on('ready', () => {
 
     }, 1000);
 });
+
+// When adding a new command to Geike, please also add that command to the 'help' constant.
 client.on('message', msg => {
     if (msg.content === '!geike herlaad configuratie') {
         if (fs.existsSync(configLocation)) {
@@ -153,6 +156,8 @@ client.on('message', msg => {
                 disconnect(channel);
             }
         });
+    } else if (msg.content === '!geike help') {
+        msg.reply(help);
     }
 });
 client.login(config.loginToken);
