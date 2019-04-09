@@ -22,7 +22,8 @@ const help = ['herlaad configuratie ➡️ Herlaad de configuratie van Geike',
                 'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
                 'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
                 'SCHREEUW ➡️ Laat Geike luidkeels haar fantastische geluid horen',
-                'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luisterd'];
+                'help ➡️ Laat Geike uitleggen naar welke commandos ze allemaal luisterd',
+                'waar ben je ➡️Geike vertelt op welke server ze draait'];
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
