@@ -40,6 +40,17 @@ Array.prototype.diff = function(a) {
     return this.filter(function(i) {return a.indexOf(i) < 0;});
 };
 
+Array.prototype.contains = function (el) {
+    return this.indexOf(el) >= 0;
+};
+
+Array.prototype.remove = function (el) {
+    if (this.contains(el)) {
+        this.splice(this.indexOf(el), 1)
+    }
+    return this
+};
+
 function findSong() {
     var cuml = 0;
     var q = Math.random();
@@ -65,17 +76,24 @@ function playSong(conn, song) {
     }
 }
 
-async function play(cid) {
-    const connection = await client.channels.filter(channel => channel.type === "voice").filter(channel => channel['id'] === cid).first().join();
+async function play(cid, playing_guilds) {
+    const channel = grabChannels().filter(channel => channel['id'] === cid).first();
+    if (playing_guilds.contains(channel.guild)) {
+        console.log("Already playing on " + channel.guild);
+        return;
+    }
+
+    const connection = await channel.join();
     console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     let dispatcher = playSong(connection, findSong());
     if (!dispatcher) return;
-
+    playing_guilds.push(channel.guild);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
         console.log("Song ended/DC-ed, disconnecting from " + connection.channel.name + " (" + connection.channel.guild + ") with reason " + reason);
         connection.disconnect();
         dispatcher.destroy();
+        playing_guilds.remove(channel.guild)
     });
 }
 
@@ -90,7 +108,7 @@ client.on('ready', () => {
 
     var previous_empty = [];
     var empty_channels = [];
-    var playing_channels = [];
+    var playing_guilds = [];
     setInterval(() => {
         previous_empty = [];
         empty_channels.forEach(channel => previous_empty.push(channel));
@@ -107,7 +125,7 @@ client.on('ready', () => {
         });
         previous_empty.diff(empty_channels).forEach(channel => {
             console.log("Target acquired in " + channel.name + " (" + channel.guild + ")");
-            play(channel['id']);
+            play(channel['id'], playing_guilds);
         });
 
     }, 1000);
