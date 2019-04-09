@@ -1,10 +1,11 @@
 const defaultConfig = {
     songs: [
-         {title: 'Zoutelande',     p: 0.70,  file: '/usr/local/geike/zoutelande.mp3'},
-         {title: 'Frankfurt Oder', p: 0.21,  file: '/usr/local/geike/frankfurt-oder.mp3'},
-         {title: 'Blof Grips',     p: 0.045, ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
-         {title: 'OOF',            p: 0.045, ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
+         {title: 'Zoutelande',     p: 'vaak',  file: '/usr/local/geike/zoutelande.mp3'},
+         {title: 'Frankfurt Oder', p: 'soms',  file: '/usr/local/geike/frankfurt-oder.mp3'},
+         {title: 'Blof Grips',     p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
+         {title: 'OOF',            p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
     ],
+    songsTotal: 14,
 
     voiceStreamOptions: {passes: 2},
     ytdlOptions: {filter: 'audioonly'},
@@ -12,6 +13,8 @@ const defaultConfig = {
     loginToken: 'secret',
     userId: '563365336758616094'
 };
+
+const frequencies = {zelden: 1, soms: 3, vaak: 9};
 
 const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
@@ -63,7 +66,7 @@ function findSong() {
 
     for (var i = 0; i < config.songs.length; ++i) {
         const song = config.songs[i];
-        cuml += song.p || 0;
+        cuml += frequencies[song.p]/config.songsTotal || 0;
         if (q <= cuml) return song;
     }
 
@@ -147,6 +150,20 @@ client.on('message', msg => {
         } else {
             msg.react('👎');
         }
+    } else if (/!geike kun je dit ook (soms|vaak|zelden) spelen (.*)/gm.exec(msg.content)) {
+        const info = /!geike kun je dit ook (soms|vaak|zelden) spelen (.*)/gm.exec(msg.content);
+        console.log(info[2] + " gaan we " + info[1] + " spelen");
+        if (info[1] === "soms" || "vaak" || "zelden") {
+            if (ytdl.validateURL(info[2])) {
+                config.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
+                config.songsTotal += frequencies[info[1]];
+                msg.reply("Oké, ik ga het " + info[1] + " spelen!");
+            } else {
+                msg.reply("Leugens! Dit is geen echte YT URL!");
+            }
+        } else {
+            msg.reply("Geen idee wat je bedoelt...");
+        }
     } else if (msg.content === '!geike geef configuratie weer') {
         let censoredConfig = {};
         Object.assign(censoredConfig, config);
@@ -182,5 +199,7 @@ client.on('message', msg => {
 client.login(config.loginToken);
 
 process.on('SIGTERM', () => {
+    fs.writeFileSync(configLocation, JSON.stringify(config), {encoding: 'utf8'});
+
     client.destroy().then(() => process.exit(0));
 });
