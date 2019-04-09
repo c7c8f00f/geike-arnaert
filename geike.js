@@ -153,6 +153,18 @@ client.on('message', msg => {
                 disconnect(channel);
             }
         });
+    } else if (msg.content === '!geike SCHREEUW') {
+        msg.guild.channels.forEach(channel => {
+            if (channel.type != 'voice' || !channel['members'].get(config.userId)) return;
+
+            let conn = channel.connection;
+            if (!conn) return;
+
+            let dispatcher = conn.dispatcher;
+            if (!dispatcher) return;
+
+            dispatcher.setVolume(2);
+        });
     }
 });
 client.login(config.loginToken);
