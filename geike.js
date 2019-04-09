@@ -17,6 +17,7 @@ const Discord = require('discord.js');
 const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
+const os = require("os");
 const help = ['herlaad configuratie ➡️ Herlaad de configuratie van Geike',
                 'geef configuratie weer ➡️ Laat de huidige configuratie van Geike zien',
                 'stop! ➡️ Laat Geike stoppen met zingen als ze in een channel zit',
@@ -177,6 +178,11 @@ client.on('message', msg => {
     } else if (msg.content === '!geike kartoffelschnaps') {
         if (msg.guild.id !== '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
+    } else if (msg.content === '!geike waar ben je') {
+        msg.reply(os.hostname());
+    } else if (msg.content === '!geike luister teef') {
+        msg.react('😡');
+        msg.react('🖕');
     }
 });
 client.login(config.loginToken);
