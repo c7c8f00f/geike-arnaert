@@ -145,7 +145,7 @@ client.on('message', msg => {
         delete censoredConfig.loginToken;
         msg.reply(JSON.stringify(censoredConfig, null, 2));
     } else if (msg.content === '!geike stop!') {
-        msg.guild().grabChannels().forEach(channel => {
+        msg.guild.channels.forEach(channel => {
             if (channel['members'].get(config.userId) !== undefined) {
                 msg.react('🙄');
                 msg.reply('Okay 😞')
