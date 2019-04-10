@@ -202,28 +202,28 @@ client.on('message', msg => {
             if (ytdl.validateURL(info[2])) {
                 config.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
                 config.songsTotal += frequencies[info[1]];
-                msg.doReply(msg, "Oké, ik ga het " + info[1] + " spelen!");
+                doReply(msg, "Oké, ik ga het " + info[1] + " spelen!");
             } else {
-                msg.doReply(msg, "Leugens! Dit is geen echte YT URL!");
+                doReply(msg, "Leugens! Dit is geen echte YT URL!");
             }
         } else {
-            msg.doReply(msg, "Geen idee wat je bedoelt...");
+            doReply(msg, "Geen idee wat je bedoelt...");
         }
     } else if (msg.content === '!geike geef configuratie weer') {
         let censoredConfig = {};
         Object.assign(censoredConfig, config);
         delete censoredConfig.loginToken;
-        msg.doReply(msg, JSON.stringify(censoredConfig, null, 2));
+        doReply(msg, JSON.stringify(censoredConfig, null, 2));
     } else if (msg.content === '!geike stop!') {
         msg.guild.channels.forEach(channel => {
             if (channel.type === "voice" && channel['members'].get(config.userId) !== undefined) {
                 msg.react('🙄');
-                msg.doReply(msg, 'Oké 😞');
+                doReply(msg, 'Oké 😞');
                 disconnect(channel);
             }
         });
     } else if (msg.content === '!geike help') {
-        msg.doReply(msg, "\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
+        doReply(msg, "\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
             if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
@@ -240,7 +240,7 @@ client.on('message', msg => {
         if (msg.guild.id !== '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
     } else if (msg.content === '!geike waar ben je') {
-        msg.doReply(msg, os.hostname());
+        doReply(msg, os.hostname());
     } else if (msg.content === '!geike luister teef') {
         msg.react('😡');
         msg.react('🖕');
