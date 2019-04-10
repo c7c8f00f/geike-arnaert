@@ -1,11 +1,15 @@
 const defaultConfig = {
-    songs: [
-         {title: 'Zoutelande',     p: 'vaak',  file: '/usr/local/geike/zoutelande.mp3'},
-         {title: 'Frankfurt Oder', p: 'soms',  file: '/usr/local/geike/frankfurt-oder.mp3'},
-         {title: 'Blof Grips',     p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
-         {title: 'OOF',            p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
-    ],
-    songsTotal: 14,
+    guilds: {
+        _default: {
+            songs: [
+                {title: 'Zoutelande',     p: 'vaak',  file: '/usr/local/geike/zoutelande.mp3'},
+                {title: 'Frankfurt Oder', p: 'soms',  file: '/usr/local/geike/frankfurt-oder.mp3'},
+                {title: 'Blof Grips',     p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=b6vpW-21c0w'},
+                {title: 'OOF',            p: 'zelden', ytdl: 'https://www.youtube.com/watch?v=YMNY2NcSMm8'}
+            ],
+            songsTotal: 14,
+        }
+    },
 
     voiceStreamOptions: {passes: 2},
     ytdlOptions: {filter: 'audioonly'},
@@ -69,17 +73,26 @@ Array.prototype.remove = function (el) {
     return this
 };
 
-function findSong() {
+function findGuildConfig(guildId) {
+    if (!config.guilds[guildId]) {
+        config.guilds[guildId] = JSON.parse(JSON.stringify(config.guilds._default));
+    }
+    return config.guilds[guildId];
+}
+
+function findSong(guildId) {
+    let guild = findGuildConfig(guildId);
+
     var cuml = 0;
     var q = Math.random();
 
-    for (var i = 0; i < config.songs.length; ++i) {
-        const song = config.songs[i];
-        cuml += frequencies[song.p]/config.songsTotal || 0;
+    for (var i = 0; i < guild.songs.length; ++i) {
+        const song = guild.songs[i];
+        cuml += frequencies[song.p]/guild.songsTotal || 0;
         if (q <= cuml) return song;
     }
 
-    return config.songs[config.songs.length - 1];
+    return guild.songs[guild.songs.length - 1];
 }
 
 function playSong(conn, song) {
@@ -102,7 +115,7 @@ async function play(channel) {
 
     const connection = await channel.join();
     console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
-    let dispatcher = playSong(connection, findSong());
+    let dispatcher = playSong(connection, findSong(channel.guild.id));
     if (!dispatcher) return;
     playing_guilds.push(channel.guild);
     dispatcher.setVolume(1);
@@ -158,12 +171,13 @@ client.on('message', msg => {
             msg.react('👎');
         }
     } else if (/!geike kun je dit ook (soms|vaak|zelden) spelen (.*)/gm.exec(msg.content)) {
+        let guild = findGuildConfig(msg.guild.id);
         const info = /!geike kun je dit ook (soms|vaak|zelden) spelen (.*)/gm.exec(msg.content);
         console.log(info[2] + " gaan we " + info[1] + " spelen");
         if (info[1] === "soms" || "vaak" || "zelden") {
             if (ytdl.validateURL(info[2])) {
-                config.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
-                config.songsTotal += frequencies[info[1]];
+                guild.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
+                guild.songsTotal += frequencies[info[1]];
                 msg.reply("Oké, ik ga het " + info[1] + " spelen!");
             } else {
                 msg.reply("Leugens! Dit is geen echte YT URL!");
@@ -207,17 +221,18 @@ client.on('message', msg => {
         msg.react('😡');
         msg.react('🖕');
     } else if (msg.content === '!geike wat kan je allemaal spelen') {
+        let guild = findGuildConfig(msg.guild.id);
         msg.channel.send(new Discord.RichEmbed()
             .setColor([75, 83, 75])
             .setTitle('Nummers die ik kan spelen')
-            .setDescription(config.songs
+            .setDescription(guild.songs
                 .map(s =>
                     s.title + ' — ' + s.p
-                    + ' (' + (frequencies[s.p] / config.songsTotal * 100).toFixed() + '%)'
+                    + ' (' + (frequencies[s.p] / guild.songsTotal * 100).toFixed() + '%)'
                 )
                 .join('\n')
             )
-            .setFooter('Ik kan ' + config.songs.length + ' nummers spelen')
+            .setFooter('Ik kan ' + guild.songs.length + ' nummers spelen')
         );
     } else if (msg.content === '!geike kom terug' || msg.content === '!geike kom hier') {
         grabChannels().forEach(channel => {
