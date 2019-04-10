@@ -150,7 +150,8 @@ async function doReply(msg, reply) {
             }
         }
         if (count === 1) { // If only the member has this tag, send the message to this tag
-            msg.channel.send(msg.guild.roles.get(roleIds[i]) + '\n' + reply);
+            msg.channel.send('<@&' + roleIds[i] + '>' + '\n' + reply);
+            return;
         }
     }
 
