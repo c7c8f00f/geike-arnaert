@@ -124,7 +124,9 @@ async function doReply(msg, reply) {
     let roles = msg.member.roles; // Collection<Snowflake, Role>
     let roleIds = [];
     roles.forEach(role => {
-        roleIds.add(role.getKey().id);
+        if (roles.get(role.getKey()).mentionable) {
+            roleIds.add(roles.get(role.getKey()).id);
+        }
     });
 
     // Sanity check if there is a single role assigned to the member.
@@ -136,8 +138,9 @@ async function doReply(msg, reply) {
     let members = msg.guild.members;
     let memberRoles = [];
     members.forEach(member => {
-        member.getKey().roles.forEach(role => {
-            memberRoles.add(role.id);
+        let roles = members.get(member.getKey()).roles;
+        roles.forEach(role => {
+            memberRoles.add(roles.get(role.getKey()).id);
         });
     });
 
