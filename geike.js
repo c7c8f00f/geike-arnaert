@@ -9,6 +9,7 @@ const defaultConfig = {
             ],
             songsTotal: 14,
             cmdPrefix: '!geike',
+            blacklist: [],
         }
     },
 
@@ -361,6 +362,34 @@ let commands = [
         action: msg => grabChannels()
             .filter(channel => channel.members.has(msg.author.id))
             .forEach(play)
+    },
+    {
+        regex: /^zing alsjeblieft niet in [^\n]$/,
+        simple: 'zing alsjeblieft niet in {channel}',
+        help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
+        action: (msg, chanInfo) => {
+            let chan = chanInfo[chanInfo.length - 1];
+            if (grabChannels().contains(chan)) {
+
+            } else {
+                console.log('The channel that was trying to be reached was ' + chan);
+                doReply(msg, 'I don\'t understand which channel you mean');
+            }
+        }
+    },
+    {
+        regex: /^ik ben blij dat je hier bent in [^\n]$/,
+        simple: 'ik ben blij dat je hier bent in {channel}',
+        help: 'Geike mag weer in dit channel zingen',
+        action: (msg, chanInfo) => {
+            let chan = chanInfo[chanInfo.length - 1];
+            if (grabChannels().contains(chan)) {
+
+            } else {
+                console.log('The channel that was trying to be reached was ' + chan);
+                doReply(msg, 'I don\'t understand which channel you mean');
+            }
+        }
     }
 ]
 
