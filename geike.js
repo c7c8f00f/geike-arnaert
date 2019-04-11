@@ -373,15 +373,20 @@ client.on('message', msg => {
     if (!msg.content.startsWith(guild.cmdPrefix) || msg.author.id === config.userId) return;
 
     let cmdString = msg.content.substring(guild.cmdPrefix.length).trim();
-    commands
+    let anySucceeded = commands
         .filter(cmd => !cmd.guild || cmd.guild == guildId)
-        .forEach(cmd => {
+        .map(cmd => {
             let match = cmd.regex.exec(cmdString);
             console.log(cmdString + ' <=> ' + cmd.regex);
-            if (!match) return;
+            if (!match) return false;
 
             cmd.action(msg, match, guild, commands);
-        });
+
+            return true;
+        })
+        .some(r => r);
+
+    if (!anySucceeded) doReply(msg, "Ik weet niet wat je daarmee bedoelt...");
 });
 client.login(config.loginToken);
 
