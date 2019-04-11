@@ -134,19 +134,13 @@ async function disconnect(channel) {
 }
 
 async function doReply(msg, reply) {
-    let mentionableRoles = msg.member.roles.filter(role => role.mentionable);
+    let identifyingRoles = msg.member.roles
+            .filter(role => role.mentionable && role.members.size == 1);
 
-    // Sanity check if there is a single role assigned to the member.
-    if (mentionableRoles.size() === 0) {
-        msg.reply(reply);
+    if (identifyingRoles.size) {
+        msg.channel.send('<@&' + identifyingRoles.random().id + '>' + reply);
+        return;
     }
-
-    mentionableRoles.forEach(role => {
-        if (role.members.size() === 1) {
-            msg.channel.send('<@&' + role.id + '>' + '\n' + reply);
-            return;
-        }
-    });
 
     // If the code comes to here, there is no unique role for the member, thus simply replying.
     msg.reply(reply);
