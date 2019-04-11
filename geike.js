@@ -133,6 +133,25 @@ async function disconnect(channel) {
     connection.disconnect()
 }
 
+async function doReply(msg, reply) {
+    let mentionableRoles = msg.member.roles.filter(role => role.mentionable);
+
+    // Sanity check if there is a single role assigned to the member.
+    if (mentionableRoles.size() === 0) {
+        msg.reply(reply);
+    }
+
+    mentionableRoles.forEach(role => {
+        if (role.members.size() === 1) {
+            msg.channel.send('<@&' + role.id + '>' + '\n' + reply);
+            return;
+        }
+    });
+
+    // If the code comes to here, there is no unique role for the member, thus simply replying.
+    msg.reply(reply);
+}
+
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
@@ -178,28 +197,28 @@ client.on('message', msg => {
             if (ytdl.validateURL(info[2])) {
                 guild.songs.push({title: ytdl.getURLVideoID(info[2]), p: info[1], ytdl: info[2]});
                 guild.songsTotal += frequencies[info[1]];
-                msg.reply("Oké, ik ga het " + info[1] + " spelen!");
+                doReply("Oké, ik ga het " + info[1] + " spelen!");
             } else {
-                msg.reply("Leugens! Dit is geen echte YT URL!");
+                doReply(msg, "Leugens! Dit is geen echte YT URL!");
             }
         } else {
-            msg.reply("Geen idee wat je bedoelt...");
+            doReply(msg, "Geen idee wat je bedoelt...");
         }
     } else if (msg.content === '!geike geef configuratie weer') {
         let censoredConfig = {};
         Object.assign(censoredConfig, config);
         delete censoredConfig.loginToken;
-        msg.reply(JSON.stringify(censoredConfig, null, 2));
+        doReply(msg, JSON.stringify(censoredConfig, null, 2));
     } else if (msg.content === '!geike stop!') {
         msg.guild.channels.forEach(channel => {
             if (channel.type === "voice" && channel['members'].get(config.userId) !== undefined) {
                 msg.react('🙄');
-                msg.reply('Oké 😞');
+                doReply(msg, 'Oké 😞');
                 disconnect(channel);
             }
         });
     } else if (msg.content === '!geike help') {
-        msg.reply("\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
+        doReply(msg, "\n" + help.sort((a, b) => a.toLowerCase() < b.toLowerCase()).join('\n'));
     } else if (msg.content === '!geike SCHREEUW') {
         msg.guild.channels.forEach(channel => {
             if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
@@ -216,7 +235,7 @@ client.on('message', msg => {
         if (msg.guild.id !== '210075118716715019') return;
         msg.react(msg.guild.emojis.get('557997588482228255'));
     } else if (msg.content === '!geike waar ben je') {
-        msg.reply(os.hostname());
+        doReply(msg, os.hostname());
     } else if (msg.content === '!geike luister teef') {
         msg.react('😡');
         msg.react('🖕');
