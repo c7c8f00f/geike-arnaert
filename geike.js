@@ -134,42 +134,19 @@ async function disconnect(channel) {
 }
 
 async function doReply(msg, reply) {
-    let roles = msg.member.roles; // Collection<Snowflake, Role>
-    let roleIds = [];
-    roles.forEach(role => {
-        if (roles.get(role.getKey()).mentionable) {
-            roleIds.add(roles.get(role.getKey()).id);
-        }
-    });
+    let mentionableRoles = msg.member.roles.filter(role => role.mentionable);
 
     // Sanity check if there is a single role assigned to the member.
-    if (roleIds.size() === 0) {
+    if (mentionableRoles.size() === 0) {
         msg.reply(reply);
     }
 
-    // Retrieve all the roles that are on the server (and are assigned to a member)
-    let members = msg.guild.members;
-    let memberRoles = [];
-    members.forEach(member => {
-        let roles = members.get(member.getKey()).roles;
-        roles.forEach(role => {
-            memberRoles.add(roles.get(role.getKey()).id);
-        });
-    });
-
-    // Nasty loop to check how often a role is present in the role array.
-    for (var i = 0; i < roleIds.size(); i++) {
-        var count = 0;
-        for (var k = 0; k < memberRoles.size(); k++) {
-            if (roleIds[i] === memberRoles[k]) {
-                count++;
-            }
-        }
-        if (count === 1) { // If only the member has this tag, send the message to this tag
-            msg.channel.send('<@&' + roleIds[i] + '>' + '\n' + reply);
+    mentionableRoles.forEach(role => {
+        if (role.members.size() === 1) {
+            msg.channel.send('<@&' + role.id + '>' + '\n' + reply);
             return;
         }
-    }
+    });
 
     // If the code comes to here, there is no unique role for the member, thus simply replying.
     msg.reply(reply);
