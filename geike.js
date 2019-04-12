@@ -155,7 +155,10 @@ async function doReply(msg, reply) {
             .filter(role => role.mentionable && role.members.size == 1);
 
     if (identifyingRoles.size) {
-        msg.channel.send('<@&' + identifyingRoles.random().id + '>, ' + reply.trim(), {split: true});
+        msg.channel.send(
+            '<@&' + identifyingRoles.random().id + '>, ' + reply.replace(/^[ ]*/, ''),
+            {split: true}
+        );
         return;
     }
 
