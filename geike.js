@@ -97,14 +97,17 @@ function playSong(conn, song) {
     }
 }
 
-async function play(channel) {
-    if (playing_guilds.contains(channel.guild)) {
-        console.log("Already playing on " + channel.guild);
-        return;
+async function play(channel, connection) {
+    if (!connection) {
+        if (playing_guilds.contains(channel.guild)) {
+            console.log("Already playing on " + channel.guild);
+            return;
+        }
+
+        connection = await channel.join();
+        console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     }
 
-    const connection = await channel.join();
-    console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     let song = findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
     if (!dispatcher) return;
@@ -116,10 +119,15 @@ async function play(channel) {
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
         console.log("Song ended/DC-ed, disconnecting from " + connection.channel.name + " (" + connection.channel.guild + ") with reason " + reason);
-        connection.disconnect();
         dispatcher.destroy();
-        delete guild.currentlyPlaying;
-        playing_guilds.remove(channel.guild)
+
+        if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
+            play(channel, connection);
+        } else {
+            connection.disconnect();
+            delete guild.currentlyPlaying;
+            playing_guilds.remove(channel.guild)
+        }
     });
 }
 
@@ -140,6 +148,12 @@ async function doReply(msg, reply) {
 
     // If the code comes to here, there is no unique role for the member, thus simply replying.
     msg.reply(reply);
+}
+
+function playForUser(user) {
+    grabChannels()
+            .filter(channel => channel.members.has(user.id))
+            .forEach(ch => play(ch));
 }
 
 client.on('ready', () => {
@@ -272,9 +286,9 @@ let commands = [
         }
     },
     {
-        regex: /^(stop|STOP)[!]*$/,
+        regex: /^(stop|STOP)( met spelen)?[1!]*$/,
         simple: 'stop!',
-        help: 'Geike stopt met zingen als ze in een channel zit',
+        help: 'Geike stopt met spelen als ze in een channel zit',
         action: msg => {
             msg.guild.channels.forEach(channel => {
                 if (channel.type === "voice" && channel['members'].get(config.userId)) {
@@ -286,7 +300,7 @@ let commands = [
         }
     },
     {
-        regex: /^help[!]*$/,
+        regex: /^(help|HELP|HELLUP)[!1]*$/,
         simple: 'help',
         help: 'Geike legt uit wat ze allemaal kan',
         action: (msg, _m, guild, commands) => {
@@ -299,7 +313,7 @@ let commands = [
         }
     },
     {
-        regex: /^(harder|HARDER|SCHREEUW)[!]*$/,
+        regex: /^(harder|HARDER|SCHREEUW)[!1]*$/,
         simple: 'SCHREEUW',
         help: 'Geike laat luidkeels haar fantastische geluid horen',
         action: msg => {
@@ -357,10 +371,33 @@ let commands = [
     {
         regex: /^kom (terug|hier)$/,
         simple: 'kom {terug | hier}',
-        help: 'Geike komt (terug) in je huidige kanaal en begint opnieuw met zingen',
-        action: msg => grabChannels()
-            .filter(channel => channel.members.has(msg.author.id))
-            .forEach(play)
+        help: 'Geike komt (terug) in je huidige kanaal en begint opnieuw met spelen',
+        action: msg => playForUser(msg.author)
+    },
+    {
+        regex: /^(zet de radio aan|blijf spelen)$/,
+        simple: 'blijf spelen',
+        help: 'Geike blijft de hele tijd spelen. Vindt ze leuk',
+        action: (msg, _m, guild) => {
+            guild.radio = true;
+            if (!guild.currentlyPlaying) {
+                playForUser(msg.author);
+            }
+            doReply(msg, "Oké, ik zal blijven spelen!");
+        }
+    },
+    {
+        regex: /^zet de radio uit$/,
+        simple: 'zet de radio uit',
+        help: 'Geike stopt met spelen na het huidige nummer',
+        action: (msg, _m, guild) => {
+            guild.radio = false;
+            if (guild.currentlyPlaying) {
+                doReply(msg, "Oké, ik zal hierna stoppen met spelen!");
+            } else {
+                doReply(msg, "Oké, ik zal de volgende keer maar één nummer spelen!");
+            }
+        }
     }
 ]
 
@@ -391,7 +428,10 @@ client.on('message', msg => {
 client.login(config.loginToken);
 
 process.on('SIGTERM', () => {
-    fs.writeFileSync(configLocation, JSON.stringify(config), {encoding: 'utf8'});
+    let dupedConfig = {};
+    Object.assign(dupedConfig, config);
+    Object.values(dupedConfig.guilds).forEach(guild => delete guild.currentlyPlaying);
+    fs.writeFileSync(configLocation, JSON.stringify(dupedConfig), {encoding: 'utf8'});
 
     client.destroy().then(() => process.exit(0));
 });
