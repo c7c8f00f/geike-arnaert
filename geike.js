@@ -329,6 +329,32 @@ let commands = [
         }
     },
     {
+        regex: /^(fluister|zachter|ZACHTER|STILTE)[!1]*$/,
+        simple: '{fluister|zachter|ZACHTER|STILTE}',
+        help: 'Geike zal zich proberen iets meer in toom te houden',
+        action: msg => {
+            msg.guild.channels.forEach(channel => {
+                if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
+
+                let conn = channel.connection;
+                if (!conn) return;
+
+                let dispatcher = conn.dispatcher;
+                if (!dispatcher) return;
+
+                if (dispatcher.volume === 0.5) {
+                    doReply(msg, 'Ik ben al zo stil als ik kan zijn');
+                } else if (dispatcher.volume === 1) {
+                    doReply(msg, 'Ik zal zachter proberen te zijn');
+                    dispatcher.setVolume(0.5);
+                } else if (dispatcher.volume === 2) {
+                    doReply(msg, 'Ik zal stoppen met schreeuwen');
+                    dispatcher.set(1);
+                }
+            });
+        }
+    },
+    {
         regex: /^(harder|HARDER|SCHREEUW)[!1]*$/,
         simple: 'SCHREEUW',
         help: 'Geike laat luidkeels haar fantastische geluid horen',
@@ -342,7 +368,16 @@ let commands = [
                 let dispatcher = conn.dispatcher;
                 if (!dispatcher) return;
 
-                dispatcher.setVolume(2);
+                if (dispatcher.volume === 2) {
+                    doReply(msg, 'Ik schreeuw al zo hard als ik kan');
+                } else if (dispatcher.volume === 1) {
+                    doReply('Ik zal zo hard schreeuwen als ik kan');
+                    dispatcher.setVolume(2);
+                } else if (dispatcher.volume === 0.5) {
+                    doReply(msg, 'Ik zal wat luider zijn')
+                    dispatcher.setVolume(1);
+                }
+
             });
         }
     },
