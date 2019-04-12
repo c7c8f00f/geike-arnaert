@@ -458,6 +458,28 @@ let commands = [
                 doReply(msg, "Oké, ik zal de volgende keer maar één nummer spelen!");
             }
         }
+    },
+    {
+        regex: /^(volgende|VOLGENDE)[1!]*$/,
+        simple: 'volgende',
+        help: 'Geike zingt een ander nummer',
+        action: (msg, match, guild) => {
+            msg.guild.channels
+                .filter(ch => ch.type === 'voice' && ch.members.has(config.userId))
+                .forEach(ch => {
+                    let conn = ch.connection;
+                    if (!conn) return;
+
+                    let dispatcher = conn.dispatcher;
+                    if (!dispatcher) return;
+
+                    dispatcher.end('next');
+                });
+
+            if (match[1] === 'VOLGENDE') {
+                doReply(msg, 'Het is voor de kerk lieverd');
+            }
+        }
     }
 ];
 
