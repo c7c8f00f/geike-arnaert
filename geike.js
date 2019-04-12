@@ -109,8 +109,8 @@ async function play(channel, connection) {
         console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     }
 
-    if (config.guilds.blacklist.contains(channel)) {
-        channel.send('Ik mag hier niet meer zingen van jullie 😢');
+    if (config.guilds.blacklist.contains(channel.name)) {
+        console.log('This channel is blacklisted');
         return;
     }
 
@@ -386,7 +386,7 @@ let commands = [
         help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
         action: (msg, chanInfo) => {
             let chan = chanInfo[chanInfo.length - 1];
-            if (grabChannels().contains(chan)) {
+            if (grabChannels().some(ch => ch.name === chan)) {
                 if (!config.guilds.blacklist.contains(chan)) {
                     config.guilds.blacklist.add(chan);
                     if (chan['members'].get(config.userId)) {
@@ -409,7 +409,7 @@ let commands = [
         help: 'Geike mag weer in dit channel zingen',
         action: (msg, chanInfo) => {
             let chan = chanInfo[chanInfo.length - 1];
-            if (grabChannels().contains(chan)) {
+            if (grabChannels().some(ch => ch.name === chan)) {
                 if (config.guilds.blacklist.contains(chan)) {
                     config.guilds.blacklist.remove(chan);
                     doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan);
