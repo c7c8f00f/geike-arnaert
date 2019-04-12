@@ -106,9 +106,10 @@ function disconnect(channel, connection, guildp) {
     let conn = connection || channel.connection;
     if (conn) {
         conn.disconnect();
-        delete guild.currentlyPlaying;
-        playing_guilds.remove(channel.guild);
     }
+
+    delete guild.currentlyPlaying;
+    playing_guilds.remove(channel.guild);
 }
 
 async function play(channel, connection) {
@@ -145,7 +146,7 @@ async function play(channel, connection) {
         if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
             play(channel, connection);
         } else {
-            disconnect(channel, connection);
+            disconnect(channel, connection, guild);
         }
     });
 }
@@ -329,32 +330,6 @@ let commands = [
         }
     },
     {
-        regex: /^(fluister|zachter|ZACHTER|STILTE)[!1]*$/,
-        simple: '{fluister|zachter}',
-        help: 'Geike zal zich proberen iets meer in toom te houden',
-        action: msg => {
-            msg.guild.channels.forEach(channel => {
-                if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
-
-                let conn = channel.connection;
-                if (!conn) return;
-
-                let dispatcher = conn.dispatcher;
-                if (!dispatcher) return;
-
-                if (dispatcher.volume === 0.5) {
-                    doReply(msg, 'Ik ben al zo stil als ik kan zijn');
-                } else if (dispatcher.volume === 1) {
-                    doReply(msg, 'Ik zal zachter proberen te zijn');
-                    dispatcher.setVolume(0.5);
-                } else if (dispatcher.volume === 2) {
-                    doReply(msg, 'Ik zal stoppen met schreeuwen');
-                    dispatcher.setVolume(1);
-                }
-            });
-        }
-    },
-    {
         regex: /^(harder|HARDER|SCHREEUW)[!1]*$/,
         simple: 'SCHREEUW',
         help: 'Geike laat luidkeels haar fantastische geluid horen',
@@ -368,16 +343,7 @@ let commands = [
                 let dispatcher = conn.dispatcher;
                 if (!dispatcher) return;
 
-                if (dispatcher.volume === 2) {
-                    doReply(msg, 'Ik schreeuw al zo hard als ik kan');
-                } else if (dispatcher.volume === 1) {
-                    doReply(msg,'Ik zal zo hard schreeuwen als ik kan');
-                    dispatcher.setVolume(2);
-                } else if (dispatcher.volume === 0.5) {
-                    doReply(msg, 'Ik zal wat luider zijn')
-                    dispatcher.setVolume(1);
-                }
-
+                dispatcher.setVolume(2);
             });
         }
     },
