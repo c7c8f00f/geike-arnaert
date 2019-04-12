@@ -370,7 +370,13 @@ let commands = [
         action: (msg, chanInfo) => {
             let chan = chanInfo[chanInfo.length - 1];
             if (grabChannels().contains(chan)) {
-
+                if (!config.guilds.blacklist.contains(chan)) {
+                    config.guilds.blacklist.add(chan);
+                    msg.react('😢').catch(console.error);
+                    doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
+                } else {
+                    doReply(msg, 'ik mocht daar al niet meer zingen van iemand 🙄');
+                }
             } else {
                 console.log('The channel that was trying to be reached was ' + chan);
                 doReply(msg, 'I don\'t understand which channel you mean');
@@ -384,7 +390,12 @@ let commands = [
         action: (msg, chanInfo) => {
             let chan = chanInfo[chanInfo.length - 1];
             if (grabChannels().contains(chan)) {
-
+                if (config.guilds.blacklist.contains(chan)) {
+                    config.guilds.blacklist.remove(chan);
+                    doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan);
+                } else {
+                    doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳');
+                }
             } else {
                 console.log('The channel that was trying to be reached was ' + chan);
                 doReply(msg, 'I don\'t understand which channel you mean');
