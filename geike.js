@@ -364,7 +364,7 @@ let commands = [
             .forEach(play)
     },
     {
-        regex: /^zing alsjeblieft niet in [^\n]$/,
+        regex: /^zing alsjeblieft niet in (.*)$/,
         simple: 'zing alsjeblieft niet in {channel}',
         help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
         action: (msg, chanInfo) => {
@@ -378,7 +378,7 @@ let commands = [
         }
     },
     {
-        regex: /^ik ben blij dat je hier bent in [^\n]$/,
+        regex: /^ik ben blij dat je hier bent in (.*)$/,
         simple: 'ik ben blij dat je hier bent in {channel}',
         help: 'Geike mag weer in dit channel zingen',
         action: (msg, chanInfo) => {
