@@ -104,6 +104,11 @@ async function play(channel) {
         return;
     }
 
+    if (config.guilds.blacklist.contains(channel)) {
+        channel.send('Ik mag hier niet meer zingen van jullie 😢');
+        return;
+    }
+
     const connection = await channel.join();
     console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     let song = findSong(channel.guild.id);
@@ -325,7 +330,7 @@ let commands = [
     {
         regex: /^waar ben je$/,
         simple: 'waar ben je',
-        help: 'Geike vertelt op welke server de draait',
+        help: 'Geike vertelt op welke server ze draait',
         guild: '518091238524846131',
         action: msg => doReply(msg, os.hostname())
     },
@@ -360,7 +365,7 @@ let commands = [
         simple: 'kom {terug | hier}',
         help: 'Geike komt (terug) in je huidige kanaal en begint opnieuw met zingen',
         action: msg => grabChannels()
-            .filter(channel => channel.members.has(msg.author.id))
+            .filter(channel => channel.members.has(msg.author.id) && !config.guilds.blacklist.contains(channel))
             .forEach(play)
     },
     {
@@ -372,6 +377,9 @@ let commands = [
             if (grabChannels().contains(chan)) {
                 if (!config.guilds.blacklist.contains(chan)) {
                     config.guilds.blacklist.add(chan);
+                    if (chan['members'].get(config.userId)) {
+                        disconnect(chan);
+                    }
                     msg.react('😢').catch(console.error);
                     doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
                 } else {
