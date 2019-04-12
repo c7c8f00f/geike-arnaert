@@ -98,7 +98,28 @@ function playSong(conn, song) {
     }
 }
 
+function disconnect(channel, connection, guildp) {
+    console.log("disconnecting from " + channel.name + " (" + channel.guild + ")");
+
+    let guild = guildp || findGuildConfig(channel.guild.id);
+
+    let conn = connection || channel.connection;
+    if (conn) {
+        conn.disconnect();
+        delete guild.currentlyPlaying;
+        playing_guilds.remove(channel.guild);
+    }
+}
+
 async function play(channel, connection) {
+    let guild = findGuildConfig(channel.guild.id);
+
+    if (guild.blacklist.contains(channel.name)) {
+        console.log('This channel is blacklisted');
+        disconnect(channel, connection, guild);
+        return;
+    }
+
     if (!connection) {
         if (playing_guilds.contains(channel.guild)) {
             console.log("Already playing on " + channel.guild);
@@ -109,16 +130,10 @@ async function play(channel, connection) {
         console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     }
 
-    if (config.guilds.blacklist.contains(channel.name)) {
-        console.log('This channel is blacklisted');
-        return;
-    }
-
     let song = findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
     if (!dispatcher) return;
 
-    let guild = findGuildConfig(channel.guild.id);
     guild.currentlyPlaying = song;
 
     playing_guilds.push(channel.guild);
@@ -130,17 +145,9 @@ async function play(channel, connection) {
         if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
             play(channel, connection);
         } else {
-            connection.disconnect();
-            delete guild.currentlyPlaying;
-            playing_guilds.remove(channel.guild)
+            disconnect(channel, connection);
         }
     });
-}
-
-async function disconnect(channel) {
-    console.log("disconnecting from " + channel.name + " (" + channel.guild + ")");
-    const connection = await client.channels.filter(chl => chl.type === "voice").filter(chnl => chnl['id'] === channel['id']).first().join();
-    connection.disconnect()
 }
 
 async function doReply(msg, reply) {
@@ -148,7 +155,7 @@ async function doReply(msg, reply) {
             .filter(role => role.mentionable && role.members.size == 1);
 
     if (identifyingRoles.size) {
-        msg.channel.send('<@&' + identifyingRoles.random().id + '>, ' + reply.trim());
+        msg.channel.send('<@&' + identifyingRoles.random().id + '>, ' + reply.trim(), {split: true});
         return;
     }
 
@@ -186,7 +193,7 @@ client.on('ready', () => {
             play(channel);
         });
 
-    }, 1000);
+    }, 100);
 });
 
 let commands = [
@@ -384,17 +391,14 @@ let commands = [
         regex: /^zing alsjeblieft niet in (.*)$/,
         simple: 'zing alsjeblieft niet in {channel}',
         help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
-        action: (msg, chanInfo) => {
+        action: (msg, chanInfo, guild) => {
             let chan = chanInfo[chanInfo.length - 1];
-            if (grabChannels().some(ch => ch.name === chan)) {
-                if (!config.guilds.blacklist.contains(chan)) {
-                    config.guilds.blacklist.add(chan);
-                    if (chan['members'].get(config.userId)) {
-                        grabChannels().some(ch => {
-                            if (ch.name === chan) {
-                                disconnect(ch);
-                            }
-                        });
+            let channel = grabChannels().find(ch => ch.name === chan);
+            if (channel) {
+                if (guild.blacklist.indexOf(chan) === -1) {
+                    guild.blacklist.push(chan);
+                    if (channel.members.has(config.userId)) {
+                        disconnect(channel);
                     }
                     msg.react('😢').catch(console.error);
                     doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
@@ -411,11 +415,12 @@ let commands = [
         regex: /^ik ben blij dat je hier bent in (.*)$/,
         simple: 'ik ben blij dat je hier bent in {channel}',
         help: 'Geike mag weer in dit channel zingen',
-        action: (msg, chanInfo) => {
+        action: (msg, chanInfo, guild) => {
             let chan = chanInfo[chanInfo.length - 1];
             if (grabChannels().some(ch => ch.name === chan)) {
-                if (config.guilds.blacklist.contains(chan)) {
-                    config.guilds.blacklist.remove(chan);
+                const idx = guild.blacklist.indexOf(chan);
+                if (idx !== -1) {
+                    guild.blacklist.splice(idx, 1);
                     doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan);
                 } else {
                     doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳');
@@ -467,7 +472,6 @@ client.on('message', msg => {
         .filter(cmd => !cmd.guild || cmd.guild == guildId)
         .map(cmd => {
             let match = cmd.regex.exec(cmdString);
-            console.log(cmdString + ' <=> ' + cmd.regex);
             if (!match) return false;
 
             cmd.action(msg, match, guild, commands);
