@@ -9,6 +9,7 @@ const defaultConfig = {
             ],
             songsTotal: 14,
             cmdPrefix: '!geike',
+            blacklist: [],
         }
     },
 
@@ -106,6 +107,11 @@ async function play(channel, connection) {
 
         connection = await channel.join();
         console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
+    }
+
+    if (config.guilds.blacklist.contains(channel.name)) {
+        console.log('This channel is blacklisted');
+        return;
     }
 
     let song = findSong(channel.guild.id);
@@ -338,7 +344,7 @@ let commands = [
     {
         regex: /^waar ben je$/,
         simple: 'waar ben je',
-        help: 'Geike vertelt op welke server de draait',
+        help: 'Geike vertelt op welke server ze draait',
         guild: '518091238524846131',
         action: msg => doReply(msg, os.hostname())
     },
@@ -375,6 +381,52 @@ let commands = [
         action: msg => playForUser(msg.author)
     },
     {
+        regex: /^zing alsjeblieft niet in (.*)$/,
+        simple: 'zing alsjeblieft niet in {channel}',
+        help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
+        action: (msg, chanInfo) => {
+            let chan = chanInfo[chanInfo.length - 1];
+            if (grabChannels().some(ch => ch.name === chan)) {
+                if (!config.guilds.blacklist.contains(chan)) {
+                    config.guilds.blacklist.add(chan);
+                    if (chan['members'].get(config.userId)) {
+                        grabChannels().some(ch => {
+                            if (ch.name === chan) {
+                                disconnect(ch);
+                            }
+                        });
+                    }
+                    msg.react('😢').catch(console.error);
+                    doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
+                } else {
+                    doReply(msg, 'ik mocht daar al niet meer zingen van iemand 🙄');
+                }
+            } else {
+                console.log('The channel that was trying to be reached was ' + chan);
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
+            }
+        }
+    },
+    {
+        regex: /^ik ben blij dat je hier bent in (.*)$/,
+        simple: 'ik ben blij dat je hier bent in {channel}',
+        help: 'Geike mag weer in dit channel zingen',
+        action: (msg, chanInfo) => {
+            let chan = chanInfo[chanInfo.length - 1];
+            if (grabChannels().some(ch => ch.name === chan)) {
+                if (config.guilds.blacklist.contains(chan)) {
+                    config.guilds.blacklist.remove(chan);
+                    doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan);
+                } else {
+                    doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳');
+                }
+            } else {
+                console.log('The channel that was trying to be reached was ' + chan);
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
+            }
+        }
+    },
+    {
         regex: /^(zet de radio aan|blijf spelen)$/,
         simple: 'blijf spelen',
         help: 'Geike blijft de hele tijd spelen. Vindt ze leuk',
@@ -399,7 +451,8 @@ let commands = [
             }
         }
     }
-]
+];
+
 
 // When adding a new command to Geike, please also add that command to the 'help' constant.
 client.on('message', msg => {
