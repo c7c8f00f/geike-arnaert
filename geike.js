@@ -418,7 +418,7 @@ let commands = [
                 }
             } else {
                 console.log('The channel that was trying to be reached was ' + chan);
-                doReply(msg, 'I don\'t understand which channel you mean');
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoeld met ' + chan);
             }
         }
     },
@@ -447,7 +447,8 @@ let commands = [
             }
         }
     }
-    ]
+];
+
 
 // When adding a new command to Geike, please also add that command to the 'help' constant.
 client.on('message', msg => {
