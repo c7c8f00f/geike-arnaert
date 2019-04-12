@@ -330,7 +330,7 @@ let commands = [
     },
     {
         regex: /^(fluister|zachter|ZACHTER|STILTE)[!1]*$/,
-        simple: '{fluister|zachter|ZACHTER|STILTE}',
+        simple: '{fluister|zachter}',
         help: 'Geike zal zich proberen iets meer in toom te houden',
         action: msg => {
             msg.guild.channels.forEach(channel => {
@@ -349,7 +349,7 @@ let commands = [
                     dispatcher.setVolume(0.5);
                 } else if (dispatcher.volume === 2) {
                     doReply(msg, 'Ik zal stoppen met schreeuwen');
-                    dispatcher.set(1);
+                    dispatcher.setVolume(1);
                 }
             });
         }
@@ -371,7 +371,7 @@ let commands = [
                 if (dispatcher.volume === 2) {
                     doReply(msg, 'Ik schreeuw al zo hard als ik kan');
                 } else if (dispatcher.volume === 1) {
-                    doReply('Ik zal zo hard schreeuwen als ik kan');
+                    doReply(msg,'Ik zal zo hard schreeuwen als ik kan');
                     dispatcher.setVolume(2);
                 } else if (dispatcher.volume === 0.5) {
                     doReply(msg, 'Ik zal wat luider zijn')
