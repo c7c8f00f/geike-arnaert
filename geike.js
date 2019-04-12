@@ -390,7 +390,11 @@ let commands = [
                 if (!config.guilds.blacklist.contains(chan)) {
                     config.guilds.blacklist.add(chan);
                     if (chan['members'].get(config.userId)) {
-                        disconnect(chan);
+                        grabChannels().some(ch => {
+                            if (ch.name === chan) {
+                                disconnect(ch);
+                            }
+                        });
                     }
                     msg.react('😢').catch(console.error);
                     doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
