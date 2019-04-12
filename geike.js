@@ -422,7 +422,7 @@ let commands = [
                 }
             } else {
                 console.log('The channel that was trying to be reached was ' + chan);
-                doReply(msg, 'ik begrijp niet welk kanaal je bedoeld met ' + chan);
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
             }
         }
     },
