@@ -17,6 +17,7 @@ const defaultConfig = {
     ytdlOptions: {filter: 'audioonly'},
 
     loginToken: 'secret',
+    googleToken: 'secret',
     userId: '563365336758616094'
 };
 
@@ -27,8 +28,12 @@ const ytdl = require('ytdl-core');
 const fs = require('fs');
 const process = require('process');
 const os = require("os");
+const util = require('util');
+const https = require('https');
 
 let playing_guilds = [];
+
+const googleApi = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s";
 
 const configLocation = '/etc/geike/geike.conf';
 var config;
@@ -84,6 +89,19 @@ function findSong(guildId) {
     }
 
     return guild.songs[guild.songs.length - 1];
+}
+
+async function getSongName(songId, callback) {
+    await https.get(util.format(googleApi, songId, config.googleToken), res => {
+        res.setEncoding('utf8');
+        let response = "";
+        res.on('data', data => {
+            response += data;
+        });
+        res.on('end', () => {
+            callback(JSON.parse(response).items[0].snippet.title);
+        });
+    });
 }
 
 function playSong(conn, song) {
@@ -258,14 +276,16 @@ let commands = [
                     }
                     doReply(msg, "Oké, ik ga het " + prob + " spelen!");
                 } else if (ytdl.validateURL(songId)) {
-                    let existingSong = guild.songs.find(song => song.ytdl === songId);
-                    if (existingSong) {
-                        reprobSong(existingSong);
-                    } else {
-                        guild.songs.push({title: ytdl.getURLVideoID(songId), p: prob, ytdl: songId});
-                        guild.songsTotal += frequencies[prob];
-                    }
-                    doReply(msg, "Oké, ik ga het " + prob + " spelen!");
+                    getSongName(ytdl.getURLVideoID(songId), (songName) => {
+                        let existingSong = guild.songs.find(song => song.ytdl === songId);
+                        if (existingSong) {
+                            reprobSong(existingSong);
+                        } else {
+                            guild.songs.push({title: songName, p: prob, ytdl: songId});
+                            guild.songsTotal += frequencies[prob];
+                        }
+                        doReply(msg, "Oké, ik ga het " + prob + " spelen!");
+                    });
                 } else {
                     let existingSong = guild.songs.find(song => song.title === songId);
                     if (existingSong) {
