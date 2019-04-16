@@ -520,10 +520,10 @@ let commands = [
         regex: /^wat ben je op dit moment aan het spelen[?]*$/,
         simple: 'wat ben je op dit moment aan het spelen?',
         help: 'Geike zal vertellen welk nummer ze momenteel aan het spelen is',
-        action: (msg, guild) => {
+        action: (msg, _m, guild) => {
             let currentlyPlaying = guild.currentlyPlaying;
             if (currentlyPlaying) {
-                doReply(msg, 'Ik ben momenteel ' + currentlyPlaying + ' aan het spelen');
+                doReply(msg, 'Ik ben momenteel ' + currentlyPlaying.title + ' aan het spelen');
             } else {
                 doReply(msg, 'Ik ben momenteel niet aan het spelen')
             }
