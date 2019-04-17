@@ -145,12 +145,17 @@ async function play(channel, connection) {
 
     if (!connection) {
         if (playing_guilds.contains(channel.guild)) {
-            console.log("Already playing on " + channel.guild);
+            let guild = findGuildConfig(channel.guild.id);
+            console.log("Already playing (" + guild.currentlyPlaying.title +  ") on " + channel.guild);
             return;
         }
 
-        connection = await channel.join();
-        console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
+        try{
+            connection = await channel.join();
+            console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
+        } catch(err) {
+            console.error("Could not join " + connection.channel.name + " (" + connection.channel.guild + ")" + error);
+        }
     }
 
     let song = findSong(channel.guild.id);
