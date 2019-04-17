@@ -573,7 +573,7 @@ let commands = [
         help: 'Geike gaat dat lied spelen als ze het kent',
         action: (msg, match, guild) => {
             let currentlyPlaying = guild.currentlyPlaying;
-            let songTitle = match[0];
+            let songTitle = match[1];
             if (!currentlyPlaying) {
                 doReply(msg, 'Ik ben momenteel nergens aan het spelen');
             } else if (currentlyPlaying.title === songTitle){
