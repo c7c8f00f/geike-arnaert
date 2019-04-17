@@ -433,7 +433,7 @@ let commands = [
     {
         regex: /^kartoffelschnaps$/,
         guild: '210075118716715019',
-        action: msg => msg.react(msg.guild.emojis.get('557997588482228255'))
+        action: msg => msg.react(msg.guild.emojis.get('567418410384883788'))
     },
     {
         regex: /^waar ben je$/,
