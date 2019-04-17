@@ -98,8 +98,12 @@ async function getSongName(songId, callback) {
         res.on('data', data => {
             response += data;
         });
+        res.on('error', () => {
+            console.error("Error while getting song name");
+            callback(undefined, true);
+        });
         res.on('end', () => {
-            callback(JSON.parse(response).items[0].snippet.title);
+            callback(JSON.parse(response).items[0].snippet.title, false);
         });
     });
 }
@@ -276,7 +280,12 @@ let commands = [
                     }
                     doReply(msg, "Oké, ik ga het " + prob + " spelen!");
                 } else if (ytdl.validateURL(songId)) {
-                    getSongName(ytdl.getURLVideoID(songId), (songName) => {
+                    getSongName(ytdl.getURLVideoID(songId), (songName, error) => {
+                        if (error) {
+                            doReply(msg, "Er is iets mis gegaan bij het ophalen van de naam van dit liedje!")
+                            return
+                        }
+
                         let existingSong = guild.songs.find(song => song.ytdl === songId);
                         if (existingSong) {
                             reprobSong(existingSong);
