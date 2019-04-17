@@ -578,14 +578,16 @@ let commands = [
                 doReply(msg, 'Ik ben momenteel nergens aan het spelen');
             } else if (currentlyPlaying.title === songTitle){
                 doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen');
-            } else if (!config.guilds[guild].songs.contains(songTitle)) {
+            } else if (!config.guilds[guild.id].songs.some(song =>
+                songTitle === song.title
+            )) {
                 doReply(msg, 'Ik ken het lied ' + songTitle + ' niet');
             } else {
                 grabChannels().forEach(channel => {
                     if (channel['members'].get(config.userId) !== undefined) {
-                        play(channel, undefined, guild.songs.find(song => {
-                            songTitle === song.title;
-                        }));
+                        play(channel, undefined, guild.songs.find(song =>
+                            songTitle === song.title
+                        ))
                     }
                 });
             }
