@@ -143,6 +143,7 @@ async function play(channel, connection, song) {
         return;
     }
 
+    connection = connection || channel.connection;
     if (!connection) {
         if (playing_guilds.contains(channel.guild)) {
             console.log("Already playing on " + channel.guild);
@@ -153,7 +154,7 @@ async function play(channel, connection, song) {
         console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
     }
 
-    song = song | findSong(channel.guild.id);
+    song = song || findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
     if (!dispatcher) return;
 
@@ -583,7 +584,7 @@ let commands = [
                 grabChannels().forEach(channel => {
                     if (channel['members'].get(config.userId) !== undefined) {
                         play(channel, undefined, guild.songs.find(song => {
-                            return songTitle === song.title;
+                            songTitle === song.title;
                         }));
                     }
                 });
