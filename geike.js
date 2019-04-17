@@ -528,6 +528,14 @@ let commands = [
                 doReply(msg, 'Ik ben momenteel niet aan het spelen')
             }
         }
+    },
+    {
+        regex: /^braaf$/,
+        simple: 'braaf',
+        help: 'Geike vind het leuk als je haar braaf noemt',
+        action: msg => {
+            msg.react('🐶').catch(console.error);
+        }
     }
 ];
 
