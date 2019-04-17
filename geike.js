@@ -18,7 +18,9 @@ const defaultConfig = {
 
     loginToken: 'secret',
     googleToken: 'secret',
-    userId: '563365336758616094'
+    userId: '563365336758616094',
+
+    loggingChannelId: '568023808632553503',
 };
 
 const frequencies = {zelden: 1, soms: 3, vaak: 9};
@@ -69,6 +71,24 @@ Array.prototype.remove = function (el) {
     return this
 };
 
+function getLoggingChannel() {
+    if (!this.loggingChannel) {
+        this.loggingChannel = client.channels.get(config.loggingChannelId);
+    }
+    
+    return this.loggingChannel;
+}
+
+function log(msg) {
+    console.log(msg);
+    getLoggingChannel().send(msg, {split: true});
+}
+
+function err(msg) {
+    console.error(msg);
+    getLoggingChannel().send('@all, ' + msg, {split: true});
+}
+
 function findGuildConfig(guildId) {
     if (!config.guilds[guildId]) {
         config.guilds[guildId] = JSON.parse(JSON.stringify(config.guilds._default));
@@ -99,7 +119,7 @@ async function getSongName(songId, callback) {
             response += data;
         });
         res.on('error', () => {
-            console.error("Error while getting song name");
+            err("Error while getting song name");
             callback(undefined, true);
         });
         res.on('end', () => {
@@ -109,19 +129,19 @@ async function getSongName(songId, callback) {
 }
 
 function playSong(conn, song) {
-    console.log('Playing ' + song.title);
+    log(`Playing ${song.title} in ${conn.channel.name} (in ${conn.channel.guild})`);
     if ('file' in song) {
         return conn.playFile(song.file, config.voiceStreamOptions);
     } else if ('ytdl' in song) {
         return conn.playStream(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
     } else {
-        console.log("Don't know how to play " + JSON.stringify(song));
+        err(`Don't know how to play ${JSON.stringify(song)}`);
         return undefined;
     }
 }
 
 function disconnect(channel, connection, guildp) {
-    console.log("disconnecting from " + channel.name + " (" + channel.guild + ")");
+    log(`disconnecting from ${channel.name} (in ${channel.guild})`);
 
     let guild = guildp || findGuildConfig(channel.guild.id);
 
@@ -138,19 +158,19 @@ async function play(channel, connection) {
     let guild = findGuildConfig(channel.guild.id);
 
     if (guild.blacklist.contains(channel.name)) {
-        console.log('This channel is blacklisted');
+        log(`Channel ${channel.name} is blacklisted`);
         disconnect(channel, connection, guild);
         return;
     }
 
     if (!connection) {
         if (playing_guilds.contains(channel.guild)) {
-            console.log("Already playing on " + channel.guild);
+            log(`Already playing on ${channel.guild}`);
             return;
         }
 
         connection = await channel.join();
-        console.log("Joining " + connection.channel.name + " (" + connection.channel.guild + ")");
+        log(`Joining ${connection.channel.name} (in ${connection.channel.guild})`);
     }
 
     let song = findSong(channel.guild.id);
@@ -162,7 +182,7 @@ async function play(channel, connection) {
     playing_guilds.push(channel.guild);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
-        console.log("Song ended/DC-ed, disconnecting from " + connection.channel.name + " (" + connection.channel.guild + ") with reason " + reason);
+        log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
         dispatcher.destroy();
 
         if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
@@ -196,7 +216,7 @@ function playForUser(user) {
 }
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    log(`Logged in as ${client.user.tag}!`);
 
     var previous_empty = [];
     var empty_channels = [];
@@ -206,7 +226,7 @@ client.on('ready', () => {
         empty_channels = [];
         grabChannels().forEach(channel => {
             if (channel['members'].size === 1 && channel['members'].get(config.userId) !== undefined) {
-                console.log("I'm the only one left in " + channel.name + " (" + channel.guild + ")");
+                log(`I'm the only one left in ${channel.name} (in ${channel.guild})`);
                 disconnect(channel);
             }
 
@@ -215,7 +235,7 @@ client.on('ready', () => {
             }
         });
         previous_empty.diff(empty_channels).forEach(channel => {
-            console.log("Target acquired in " + channel.name + " (" + channel.guild + ")");
+            log(`Target acquired in ${channel.name} (in ${channel.guild})`);
             play(channel);
         });
 
@@ -425,8 +445,8 @@ let commands = [
     {
         regex: /^luister (teef|bitch)$/,
         action: msg => {
-            msg.react('😡').catch(console.error);
-            msg.react('🖕').catch(console.error);
+            msg.react('😡').catch(err);
+            msg.react('🖕').catch(err);
         }
     },
     {
@@ -467,13 +487,13 @@ let commands = [
                     if (channel.members.has(config.userId)) {
                         disconnect(channel);
                     }
-                    msg.react('😢').catch(console.error);
+                    msg.react('😢').catch(err);
                     doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
                 } else {
                     doReply(msg, 'ik mocht daar al niet meer zingen van iemand 🙄');
                 }
             } else {
-                console.log('The channel that was trying to be reached was ' + chan);
+                log(`The channel that was trying to be reached was ${chan}`);
                 doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
             }
         }
@@ -493,7 +513,7 @@ let commands = [
                     doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳');
                 }
             } else {
-                console.log('The channel that was trying to be reached was ' + chan);
+                log(`The channel that was trying to be reached was ${chan}`);
                 doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
             }
         }
@@ -563,7 +583,7 @@ let commands = [
         simple: 'braaf',
         help: 'Geike vind het leuk als je haar braaf noemt',
         action: msg => {
-            msg.react('🐶').catch(console.error);
+            msg.react('🐶').catch(err);
         }
     }
 ];
