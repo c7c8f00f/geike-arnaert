@@ -578,14 +578,14 @@ let commands = [
                 doReply(msg, 'Ik ben momenteel nergens aan het spelen');
             } else if (currentlyPlaying.title === songTitle){
                 doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen');
-            } else if (!config.guilds[guild.id].songs.some(song =>
+            } else if (!findGuildConfig(guild.id).songs.some(song =>
                 songTitle === song.title
             )) {
                 doReply(msg, 'Ik ken het lied ' + songTitle + ' niet');
             } else {
                 grabChannels().forEach(channel => {
                     if (channel['members'].get(config.userId) !== undefined) {
-                        play(channel, undefined, guild.songs.find(song =>
+                        play(channel, undefined, findGuildConfig(guild.id).songs.find(song =>
                             songTitle === song.title
                         ))
                     }
