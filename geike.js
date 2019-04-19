@@ -86,7 +86,7 @@ function log(msg) {
 
 function err(msg) {
     console.error(msg);
-    getLoggingChannel().send('@all, ' + msg, {split: true});
+    getLoggingChannel().send('@everyone, I had a stronk\n' + msg, {split: true});
 }
 
 function findGuildConfig(guildId) {
@@ -169,8 +169,12 @@ async function play(channel, connection) {
             return;
         }
 
-        connection = await channel.join();
-        log(`Joining ${connection.channel.name} (in ${connection.channel.guild})`);
+        log(`Joining ${channel.name} (in ${channel.guild})`);
+        try {
+            connection = await channel.join();
+        } catch (e) {
+            err(e);
+        }
     }
 
     let song = findSong(channel.guild.id);
@@ -216,6 +220,7 @@ function playForUser(user) {
 }
 
 client.on('ready', () => {
+    config.userId = client.user.id;
     log(`Logged in as ${client.user.tag}!`);
 
     var previous_empty = [];
