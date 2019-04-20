@@ -154,7 +154,7 @@ function disconnect(channel, connection, guildp) {
     playing_guilds.remove(channel.guild);
 }
 
-async function play(channel, connection) {
+async function play(channel, connection, song) {
     let guild = findGuildConfig(channel.guild.id);
 
     if (guild.blacklist.contains(channel.name)) {
@@ -163,6 +163,7 @@ async function play(channel, connection) {
         return;
     }
 
+    connection = connection || channel.connection;
     if (!connection) {
         if (playing_guilds.contains(channel.guild)) {
             log(`Already playing on ${channel.guild}`);
@@ -177,7 +178,7 @@ async function play(channel, connection) {
         }
     }
 
-    let song = findSong(channel.guild.id);
+    song = song || findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
     if (!dispatcher) return;
 
@@ -589,6 +590,32 @@ let commands = [
         help: 'Geike vind het leuk als je haar braaf noemt',
         action: msg => {
             msg.react('🐶').catch(err);
+        }
+    },
+    {
+        regex: /^kan je dit spelen (.*)$/,
+        simple: 'kan je dit spelen {titel}',
+        help: 'Geike gaat dat lied spelen als ze het kent',
+        action: (msg, match, guild) => {
+            let currentlyPlaying = guild.currentlyPlaying;
+            let songTitle = match[1];
+            if (!currentlyPlaying) {
+                doReply(msg, 'Ik ben momenteel nergens aan het spelen');
+            } else if (currentlyPlaying.title === songTitle){
+                doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen');
+            } else if (!findGuildConfig(guild.id).songs.some(song =>
+                songTitle === song.title
+            )) {
+                doReply(msg, 'Ik ken het lied ' + songTitle + ' niet');
+            } else {
+                grabChannels().forEach(channel => {
+                    if (channel['members'].get(config.userId) !== undefined) {
+                        play(channel, undefined, findGuildConfig(guild.id).songs.find(song =>
+                            songTitle === song.title
+                        ))
+                    }
+                });
+            }
         }
     }
 ];
