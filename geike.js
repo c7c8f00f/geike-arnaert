@@ -487,10 +487,11 @@ let commands = [
         help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
         action: (msg, chanInfo, guild) => {
             let chan = chanInfo[chanInfo.length - 1];
-            let channel = grabChannels().find(ch => ch.name === chan);
+            let channel = grabChannels().find(ch => ch.guild.id === msg.guild.id && ch.name === chan);
             if (channel) {
                 if (guild.blacklist.indexOf(chan) === -1) {
                     guild.blacklist.push(chan);
+                    log(`Blacklisted from channel with members ${channel.members.array()}`);
                     if (channel.members.has(config.userId)) {
                         disconnect(channel);
                     }
@@ -631,6 +632,15 @@ let commands = [
             } else {
                 doReply(msg, "Dat is geen naam waar ik naar kan luisteren");
             }
+        }
+    },
+    {
+        regex: /^in welke guilds speel je nu[\?]?$/,
+        simple: 'in welke guilds speel je nu?',
+        help: 'Geike vertelt in welke guilds ze aan het spelen is',
+        guild: '518091238524846131',
+        action: msg => {
+            doReply(msg, playing_guilds.join('; '));
         }
     }
 ];
