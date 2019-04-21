@@ -380,7 +380,7 @@ let commands = [
             doReply(msg, "\n" + commands
                 .filter(cmd => (!cmd.guild || cmd.guild == msg.guild.id) && cmd.help)
                 .map(cmd => guild.cmdPrefix + ' ' + cmd.simple + ' ➡️ ' + cmd.help.replace('!geike', guild.cmdPrefix))
-                .sort((a, b) => a.toLowerCase() < b.toLowerCase())
+                .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
                 .join('\n')
             );
         }
