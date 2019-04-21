@@ -273,7 +273,7 @@ let commands = [
             let censoredConfig = {};
             Object.assign(censoredConfig, config);
             delete censoredConfig.loginToken;
-            doReply(msg, JSON.stringify(censoredConfig, null, 2));
+            msg.channel.sendCode('json', JSON.stringify(censoredConfig, null, 2), {split: true});
         }
     },
     {
