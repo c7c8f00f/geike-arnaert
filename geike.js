@@ -378,7 +378,7 @@ let commands = [
         action: (msg, _m, guild, commands) => {
             doReply(msg, "\n" + commands
                 .filter(cmd => (!cmd.guild || cmd.guild == msg.guild.id) && cmd.help)
-                .map(cmd => guild.cmdPrefix + ' ' + cmd.simple + ' ➡️ ' + cmd.help)
+                .map(cmd => guild.cmdPrefix + ' ' + cmd.simple + ' ➡️ ' + cmd.help.replace('!geike', guild.cmdPrefix))
                 .sort((a, b) => a.toLowerCase() < b.toLowerCase())
                 .join('\n')
             );
@@ -615,6 +615,20 @@ let commands = [
                         ))
                     }
                 });
+            }
+        }
+    },
+    {
+        regex: /^luister voortaan naar (.*)$/,
+        simple: 'luister voortaan naar {naam}',
+        help: 'Geike luistert voortaan naar de nieuwe naam in plaats van !geike',
+        action: (msg, match, guild) => {
+            let newName = match[1].trim();
+            if (newName) {
+                guild.cmdPrefix = newName;
+                doReply(msg, `Oké, voortaan luister ik naar ${newName}`);
+            } else {
+                doReply(msg, "Dat is geen naam waar ik naar kan luisteren");
             }
         }
     }
