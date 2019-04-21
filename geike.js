@@ -272,6 +272,7 @@ let commands = [
         action: msg => {
             let censoredConfig = {};
             Object.assign(censoredConfig, config);
+            delete censoredConfig.googleToken;
             delete censoredConfig.loginToken;
             msg.channel.sendCode('json', JSON.stringify(censoredConfig, null, 2), {split: true});
         }
