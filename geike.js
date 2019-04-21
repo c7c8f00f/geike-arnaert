@@ -272,6 +272,7 @@ let commands = [
         action: msg => {
             let censoredConfig = {};
             Object.assign(censoredConfig, config);
+            delete censoredConfig.googleToken;
             delete censoredConfig.loginToken;
             delete censoredConfig.googleToken;
             msg.channel.send(JSON.stringify(censoredConfig, null, 2), {split: true, code: 'json'});
@@ -380,7 +381,7 @@ let commands = [
             doReply(msg, "\n" + commands
                 .filter(cmd => (!cmd.guild || cmd.guild == msg.guild.id) && cmd.help)
                 .map(cmd => guild.cmdPrefix + ' ' + cmd.simple + ' ➡️ ' + cmd.help.replace('!geike', guild.cmdPrefix))
-                .sort((a, b) => a.toLowerCase() < b.toLowerCase())
+                .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
                 .join('\n')
             );
         }
@@ -487,10 +488,11 @@ let commands = [
         help: 'Geike zal niet meer haar zangkunsten vertonen in dit channel',
         action: (msg, chanInfo, guild) => {
             let chan = chanInfo[chanInfo.length - 1];
-            let channel = grabChannels().find(ch => ch.name === chan);
+            let channel = grabChannels().find(ch => ch.guild.id === msg.guild.id && ch.name === chan);
             if (channel) {
                 if (guild.blacklist.indexOf(chan) === -1) {
                     guild.blacklist.push(chan);
+                    log(`Blacklisted from channel with members ${channel.members.array()}`);
                     if (channel.members.has(config.userId)) {
                         disconnect(channel);
                     }
@@ -631,6 +633,24 @@ let commands = [
             } else {
                 doReply(msg, "Dat is geen naam waar ik naar kan luisteren");
             }
+        }
+    },
+    {
+        regex: /^in welke guilds speel je nu[\?]?$/,
+        simple: 'in welke guilds speel je nu?',
+        help: 'Geike vertelt in welke guilds ze aan het spelen is',
+        guild: '518091238524846131',
+        action: msg => {
+            doReply(msg, playing_guilds.join('; '));
+        }
+    },
+    {
+        regex: /^(sterf|STERF)[1!]*$/,
+        simple: 'sterf',
+        help: 'Geike stopt met werken',
+        guild: '518091238524846131',
+        action: () => {
+            process.kill(process.pid);
         }
     }
 ];
