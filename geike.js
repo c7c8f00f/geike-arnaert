@@ -131,9 +131,9 @@ async function getSongName(songId, callback) {
 function playSong(conn, song) {
     log(`Playing ${song.title} in ${conn.channel.name} (in ${conn.channel.guild})`);
     if ('file' in song) {
-        return conn.playFile(song.file, config.voiceStreamOptions);
+        return conn.play(song.file, config.voiceStreamOptions);
     } else if ('ytdl' in song) {
-        return conn.playStream(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
+        return conn.play(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
     } else {
         err(`Don't know how to play ${JSON.stringify(song)}`);
         return undefined;
@@ -151,7 +151,7 @@ function disconnect(channel, connection, guildp) {
     }
 
     delete guild.currentlyPlaying;
-    playing_guilds.remove(channel.guild);
+    playing_guilds.remove(channel.guild.id);
 }
 
 async function play(channel, connection, song) {
@@ -165,7 +165,7 @@ async function play(channel, connection, song) {
 
     connection = connection || channel.connection;
     if (!connection) {
-        if (playing_guilds.contains(channel.guild)) {
+        if (playing_guilds.contains(channel.guild.id)) {
             log(`Already playing on ${channel.guild}`);
             return;
         }
@@ -184,7 +184,7 @@ async function play(channel, connection, song) {
 
     guild.currentlyPlaying = song;
 
-    playing_guilds.push(channel.guild);
+    playing_guilds.push(channel.guild.id);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
         log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
@@ -273,7 +273,8 @@ let commands = [
             let censoredConfig = {};
             Object.assign(censoredConfig, config);
             delete censoredConfig.loginToken;
-            msg.channel.sendCode('json', JSON.stringify(censoredConfig, null, 2), {split: true});
+            delete censoredConfig.googleToken;
+            msg.channel.send(JSON.stringify(censoredConfig, null, 2), {split: true, code: 'json'});
         }
     },
     {
@@ -460,7 +461,7 @@ let commands = [
         simple: 'wat kan je allemaal spelen',
         help: 'Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak',
         action: (msg, _m, guild) => {
-            msg.channel.send(new Discord.RichEmbed()
+            msg.channel.send(new Discord.MessageEmbed()
                 .setColor([75, 83, 75])
                 .setTitle('Nummers die ik kan spelen')
                 .setDescription(guild.songs
