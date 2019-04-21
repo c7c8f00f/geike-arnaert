@@ -151,7 +151,7 @@ function disconnect(channel, connection, guildp) {
     }
 
     delete guild.currentlyPlaying;
-    playing_guilds.remove(channel.guild);
+    playing_guilds.remove(channel.guild.id);
 }
 
 async function play(channel, connection, song) {
@@ -165,7 +165,7 @@ async function play(channel, connection, song) {
 
     connection = connection || channel.connection;
     if (!connection) {
-        if (playing_guilds.contains(channel.guild)) {
+        if (playing_guilds.contains(channel.guild.id)) {
             log(`Already playing on ${channel.guild}`);
             return;
         }
@@ -184,7 +184,7 @@ async function play(channel, connection, song) {
 
     guild.currentlyPlaying = song;
 
-    playing_guilds.push(channel.guild);
+    playing_guilds.push(channel.guild.id);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
         log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
