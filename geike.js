@@ -664,7 +664,7 @@ process.on('SIGTERM', () => {
     let dupedConfig = {};
     Object.assign(dupedConfig, config);
     Object.values(dupedConfig.guilds).forEach(guild => delete guild.currentlyPlaying);
-    fs.writeFileSync(configLocation, JSON.stringify(dupedConfig), {encoding: 'utf8'});
+    fs.writeFileSync(configLocation, JSON.stringify(dupedConfig), {encoding: 'utf8', mode: 0o600});
 
     client.destroy().then(() => process.exit(0));
 });
