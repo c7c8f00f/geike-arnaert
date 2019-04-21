@@ -642,6 +642,15 @@ let commands = [
         action: msg => {
             doReply(msg, playing_guilds.join('; '));
         }
+    },
+    {
+        regex: /^(sterf|STERF)[1!]*$/,
+        simple: 'sterf',
+        help: 'Geike stopt met werken',
+        guild: '518091238524846131',
+        action: () => {
+            process.kill(process.pid);
+        }
     }
 ];
 
