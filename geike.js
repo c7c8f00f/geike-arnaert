@@ -670,7 +670,11 @@ client.on('message', msg => {
             let match = cmd.regex.exec(cmdString);
             if (!match) return false;
 
-            cmd.action(msg, match, guild, commands);
+            try {
+                cmd.action(msg, match, guild, commands);
+            } catch (ex) {
+                err(ex.stack);
+            }
 
             return true;
         })
