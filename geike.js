@@ -33,7 +33,7 @@ const os = require("os");
 const util = require('util');
 const https = require('https');
 
-let playing_guilds = [];
+let playing_guilds = new Set();
 
 const googleApi = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=%s&key=%s";
 
@@ -75,7 +75,7 @@ function getLoggingChannel() {
     if (!this.loggingChannel) {
         this.loggingChannel = client.channels.get(config.loggingChannelId);
     }
-    
+
     return this.loggingChannel;
 }
 
@@ -151,7 +151,7 @@ function disconnect(channel, connection, guildp) {
     }
 
     delete guild.currentlyPlaying;
-    playing_guilds.remove(channel.guild.id);
+    playing_guilds.delete(channel.guild.id);
 }
 
 async function play(channel, connection, song) {
@@ -165,7 +165,7 @@ async function play(channel, connection, song) {
 
     connection = connection || channel.connection;
     if (!connection) {
-        if (playing_guilds.contains(channel.guild.id)) {
+        if (playing_guilds.has(channel.guild.id)) {
             log(`Already playing on ${channel.guild}`);
             return;
         }
@@ -184,7 +184,7 @@ async function play(channel, connection, song) {
 
     guild.currentlyPlaying = song;
 
-    playing_guilds.push(channel.guild.id);
+    playing_guilds.add(channel.guild.id);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
         log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
@@ -640,7 +640,7 @@ let commands = [
         help: 'Geike vertelt in welke guilds ze aan het spelen is',
         guild: '518091238524846131',
         action: msg => {
-            doReply(msg, playing_guilds.join('; '));
+            doReply(msg, Array.from(playing_guilds).join('; '));
         }
     },
     {
@@ -670,7 +670,11 @@ client.on('message', msg => {
             let match = cmd.regex.exec(cmdString);
             if (!match) return false;
 
-            cmd.action(msg, match, guild, commands);
+            try {
+                cmd.action(msg, match, guild, commands);
+            } catch (ex) {
+                err(ex.stack);
+            }
 
             return true;
         })
