@@ -580,7 +580,7 @@ let commands = [
         action: (msg, _m, guild) => {
             let currentlyPlaying = guild.currentlyPlaying;
             if (currentlyPlaying) {
-                doReply(msg, 'Ik ben momenteel ' + currentlyPlaying.title + ' aan het spelen');
+                doReply(msg, `Ik ben momenteel ${currentlyPlaying.title} aan het spelen. Ik speel dit ${currentlyPlaying.p}.`);
             } else {
                 doReply(msg, 'Ik ben momenteel niet aan het spelen')
             }
