@@ -8,10 +8,10 @@ RUN apt install -y make build-essential autoconf
 
 WORKDIR /usr/local/geike/
 
-COPY package*.json *.mp3 ./
+COPY package*.json ./
 
 RUN npm install
 
-COPY geike.js *.wav ./
+COPY geike.js *.wav *.mp3 ./
 
 CMD ["node", "geike.js"]

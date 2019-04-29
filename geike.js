@@ -177,6 +177,7 @@ async function play(channel, connection, song) {
             err(e);
         }
     }
+    if (connection.dispatcher) connection.dispatcher.end('play override');
 
     song = song || findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
@@ -187,12 +188,16 @@ async function play(channel, connection, song) {
     playing_guilds.add(channel.guild.id);
     dispatcher.setVolume(1);
     dispatcher.on('end', reason => {
-        log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
-        dispatcher.destroy();
+        if (reason === 'play override') {
+            log(`Song interrupted through play override in ${connection.channel.name} (in ${connection.channel.guild})`);
+            return;
+        }
 
         if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
+            log(`Song ended/DC-ed, continuing in radio mode in ${connection.channel.name} (in ${connection.channel.guild})`);
             play(channel, connection);
         } else {
+            log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
             disconnect(channel, connection, guild);
         }
     });
@@ -600,21 +605,18 @@ let commands = [
         help: 'Geike gaat dat lied spelen als ze het kent',
         action: (msg, match, guild) => {
             let currentlyPlaying = guild.currentlyPlaying;
-            let songTitle = match[1];
+            let songTitle = match[1].trim();
+            let song = guild.songs.find(song => song.title.trim() === songTitle);
             if (!currentlyPlaying) {
                 doReply(msg, 'Ik ben momenteel nergens aan het spelen');
             } else if (currentlyPlaying.title === songTitle){
                 doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen');
-            } else if (!findGuildConfig(guild.id).songs.some(song =>
-                songTitle === song.title
-            )) {
+            } else if (!song) {
                 doReply(msg, 'Ik ken het lied ' + songTitle + ' niet');
             } else {
                 grabChannels().forEach(channel => {
                     if (channel['members'].get(config.userId) !== undefined) {
-                        play(channel, undefined, findGuildConfig(guild.id).songs.find(song =>
-                            songTitle === song.title
-                        ))
+                        play(channel, undefined, song);
                     }
                 });
             }
