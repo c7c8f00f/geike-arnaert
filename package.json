@@ -11,8 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "discord.js": "^11.4.2",
-    "node-opus": "^0.3.1",
+    "node-opus": "^0.3.2",
     "sodium": "^3.0.2",
-    "ytdl-core": "^0.29.1"
+    "ytdl-core": "^0.29.2"
   }
 }

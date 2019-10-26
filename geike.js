@@ -50,6 +50,19 @@ if (fs.existsSync(configLocation)) {
     });
 }
 
+function saveConfig() {
+    log(`Saving config file at ${configLocation}`);
+
+    let dupedConfig = {};
+    Object.assign(dupedConfig, config);
+    Object.values(dupedConfig.guilds).forEach(guild => delete guild.currentlyPlaying);
+
+    const fd = fs.openSync(configLocation, 'w', 0o600);
+    fs.writeSync(fd, JSON.stringify(dupedConfig));
+    fs.fdatasyncSync(fd);
+    fs.closeSync(fd);
+}
+
 const client = new Discord.Client();
 
 function grabChannels() {
@@ -86,7 +99,7 @@ function log(msg) {
 
 function err(msg) {
     console.error(msg);
-    getLoggingChannel().send('@everyone, I had a stronk\n' + msg, {split: true});
+    getLoggingChannel().send('@everyone, I had a stronk\n' + JSON.stringify(msg), {split: true});
 }
 
 function findGuildConfig(guildId) {
@@ -361,6 +374,8 @@ let commands = [
                 }
                 break;
             }
+
+            saveConfig();
         }
     },
     {
@@ -687,10 +702,7 @@ client.on('message', msg => {
 client.login(config.loginToken);
 
 process.on('SIGTERM', () => {
-    let dupedConfig = {};
-    Object.assign(dupedConfig, config);
-    Object.values(dupedConfig.guilds).forEach(guild => delete guild.currentlyPlaying);
-    fs.writeFileSync(configLocation, JSON.stringify(dupedConfig), {encoding: 'utf8', mode: 0o600});
+    saveConfig();
 
     client.destroy().then(() => process.exit(0));
 });
