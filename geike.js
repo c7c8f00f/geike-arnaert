@@ -23,6 +23,8 @@ const defaultConfig = {
     loggingChannelId: '568023808632553503',
 };
 
+const f00fGuildId = '518091238524846131';
+
 const frequencies = {zelden: 1, soms: 3, vaak: 9};
 
 const Discord = require('discord.js');
@@ -218,7 +220,7 @@ async function play(channel, connection, song) {
 
 async function doReply(msg, reply) {
     let identifyingRoles = msg.member.roles
-            .filter(role => role.mentionable && role.members.size == 1);
+            .filter(role => role.mentionable && role.members.size === 1);
 
     if (identifyingRoles.size) {
         msg.channel.send(
@@ -327,7 +329,7 @@ let commands = [
                 } else if (ytdl.validateURL(songId)) {
                     getSongName(ytdl.getURLVideoID(songId), (songName, error) => {
                         if (error) {
-                            doReply(msg, "Er is iets mis gegaan bij het ophalen van de naam van dit liedje!")
+                            doReply(msg, "Er is iets mis gegaan bij het ophalen van de naam van dit liedje!");
                             return
                         }
 
@@ -671,24 +673,25 @@ let commands = [
     }
 ];
 
+const magicCommands = [
+    {
+        regex: /^omw$/,
+        guild: f00fGuildId,
+        action: msg => {
+            doReply(msg, 'Auke stijl?');
+        }
+    }
+];
 
-// When adding a new command to Geike, please also add that command to the 'help' constant.
-client.on('message', msg => {
-    let guildId = msg.guild.id;
-    let guild = findGuildConfig(guildId);
-    if (!guild.cmdPrefix) guild.cmdPrefix = '!geike';
-
-    if (!msg.content.startsWith(guild.cmdPrefix) || msg.author.id === config.userId) return;
-
-    let cmdString = msg.content.substring(guild.cmdPrefix.length).trim();
-    let anySucceeded = commands
-        .filter(cmd => !cmd.guild || cmd.guild == guildId)
+function tryCommands(comms, guildId, cmdString, msg, guild) {
+    return comms
+        .filter(cmd => !cmd.guild || cmd.guild === guildId)
         .map(cmd => {
             let match = cmd.regex.exec(cmdString);
             if (!match) return false;
 
             try {
-                cmd.action(msg, match, guild, commands);
+                cmd.action(msg, match, guild, comms);
             } catch (ex) {
                 err(ex.stack);
             }
@@ -696,6 +699,21 @@ client.on('message', msg => {
             return true;
         })
         .some(r => r);
+}
+
+// When adding a new command to Geike, please also add that command to the 'help' constant.
+client.on('message', msg => {
+    let guildId = msg.guild.id;
+    let guild = findGuildConfig(guildId);
+
+    const magicCmdString = msg.content.trim();
+    const anyMagicSucceeded = tryCommands(magicCommands, guildId, magicCmdString, msg, guild);
+
+    if (!guild.cmdPrefix) guild.cmdPrefix = '!geike';
+    if (!msg.content.startsWith(guild.cmdPrefix) || msg.author.id === config.userId) return;
+
+    let cmdString = msg.content.substring(guild.cmdPrefix.length).trim();
+    let anySucceeded = tryCommands(commands, guildId, cmdString, msg, guild);
 
     if (!anySucceeded) doReply(msg, "Ik weet niet wat je daarmee bedoelt...");
 });
