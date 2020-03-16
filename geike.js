@@ -13,8 +13,8 @@ const defaultConfig = {
         }
     },
 
-    voiceStreamOptions: {passes: 2},
-    ytdlOptions: {filter: 'audioonly'},
+    voiceStreamOptions: { passes: 2, plp: 0.10, fec: true },
+    ytdlOptions: { filter: 'audioonly' },
 
     loginToken: 'secret',
     googleToken: 'secret',
@@ -57,7 +57,14 @@ function saveConfig() {
 
     let dupedConfig = {};
     Object.assign(dupedConfig, config);
-    Object.values(dupedConfig.guilds).forEach(guild => delete guild.currentlyPlaying);
+    dupedConfig.guilds = {};
+    Object.keys(config.guilds).forEach((id) => {
+        const tpl = config.guilds[id];
+        dupedConfig.guilds[id] = {};
+        Object.keys(tpl).filter(k => k !== 'dynamic' && k !== 'currentlyPlaying').forEach((k) => {
+            dupedConfig.guilds[id][k] =  tpl[k];
+        });
+    });
 
     const fd = fs.openSync(configLocation, 'w', 0o600);
     fs.writeSync(fd, JSON.stringify(dupedConfig));
@@ -68,7 +75,7 @@ function saveConfig() {
 const client = new Discord.Client();
 
 function grabChannels() {
-    return client.channels.filter( channel => channel.type === "voice");
+    return client.channels.cache.filter(channel => channel.type === "voice");
 }
 
 Array.prototype.diff = function(a) {
@@ -88,7 +95,7 @@ Array.prototype.remove = function (el) {
 
 function getLoggingChannel() {
     if (!this.loggingChannel) {
-        this.loggingChannel = client.channels.get(config.loggingChannelId);
+        this.loggingChannel = client.channels.cache.get(config.loggingChannelId);
     }
 
     return this.loggingChannel;
@@ -101,13 +108,16 @@ function log(msg) {
 
 function err(msg) {
     console.error(msg);
-    getLoggingChannel().send('@everyone, I had a stronk\n' + JSON.stringify(msg), {split: true});
+    getLoggingChannel().send(`@everyone, I had a stronk:\n${typeof(msg) === 'string' ? msg : JSON.stringify(msg)}`,
+        {split: true, code: true}
+    );
 }
 
 function findGuildConfig(guildId) {
     if (!config.guilds[guildId]) {
         config.guilds[guildId] = JSON.parse(JSON.stringify(config.guilds._default));
     }
+    if (!config.guilds[guildId].dynamic) config.guilds[guildId].dynamic = {};
     return config.guilds[guildId];
 }
 
@@ -146,9 +156,9 @@ async function getSongName(songId, callback) {
 function playSong(conn, song) {
     log(`Playing ${song.title} in ${conn.channel.name} (in ${conn.channel.guild})`);
     if ('file' in song) {
-        return conn.playFile(song.file, config.voiceStreamOptions);
+        return conn.play(song.file, config.voiceStreamOptions);
     } else if ('ytdl' in song) {
-        return conn.playStream(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
+        return conn.play(ytdl(song.ytdl, config.ytdlOptions), config.voiceStreamOptions);
     } else {
         err(`Don't know how to play ${JSON.stringify(song)}`);
         return undefined;
@@ -156,21 +166,26 @@ function playSong(conn, song) {
 }
 
 function disconnect(channel, connection, guildp) {
-    log(`disconnecting from ${channel.name} (in ${channel.guild})`);
+    log(`Disconnecting from ${channel.name} (in ${channel.guild})`);
 
     let guild = guildp || findGuildConfig(channel.guild.id);
 
-    let conn = connection || channel.connection;
+    let conn = connection || channel.connection || guild.dynamic.connection;
     if (conn) {
         conn.disconnect();
+    } else {
+        log(`Not disconnecting from ${channel.name} (in ${channel.guild}); connection handle was lost`);
     }
 
-    delete guild.currentlyPlaying;
+    channel.leave();
+
+    delete guild.dynamic.connection;
     playing_guilds.delete(channel.guild.id);
 }
 
 async function play(channel, connection, song) {
     let guild = findGuildConfig(channel.guild.id);
+    connection = connection || channel.connection || guild.dynamic.connection;
 
     if (guild.blacklist.contains(channel.name)) {
         log(`Channel ${channel.name} is blacklisted`);
@@ -178,66 +193,64 @@ async function play(channel, connection, song) {
         return;
     }
 
-    connection = connection || channel.connection;
-    if (!connection) {
+    if (!connection || connection.status !== 0) {
         if (playing_guilds.has(channel.guild.id)) {
             log(`Already playing on ${channel.guild}`);
             return;
         }
 
         log(`Joining ${channel.name} (in ${channel.guild})`);
-        try {
-            connection = await channel.join();
-        } catch (e) {
-            err(e);
-        }
+        connection = await channel.join();
     }
-    if (connection.dispatcher) connection.dispatcher.end('play override');
+    if (connection.dispatcher) {
+        guild.dynamic.playEndedDispatcher = true;
+        connection.dispatcher.end();
+    }
 
     song = song || findSong(channel.guild.id);
     let dispatcher = playSong(connection, song);
     if (!dispatcher) return;
 
     guild.currentlyPlaying = song;
+    guild.dynamic.connection = connection;
 
     playing_guilds.add(channel.guild.id);
     dispatcher.setVolume(1);
-    dispatcher.on('end', reason => {
-        if (reason === 'play override') {
-            log(`Song interrupted through play override in ${connection.channel.name} (in ${connection.channel.guild})`);
+    dispatcher.on('finish', () => {
+        if (guild.dynamic.playEndedDispatcher) {
+            guild.dynamic.playEndedDispatcher = false;
             return;
         }
-
-        if (guild.radio && connection.status !== 4 /* DISCONNECTED */) {
+        if ((guild.radio && connection.status !== 4 /* DISCONNECTED */) || guild.dynamic.nextEndedDispatcher) {
             log(`Song ended/DC-ed, continuing in radio mode in ${connection.channel.name} (in ${connection.channel.guild})`);
+            guild.dynamic.nextEndedDispatcher = false;
             play(channel, connection);
         } else {
-            log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild}) with reason ${reason}`);
+            log(`Song ended/DC-ed, disconnecting from ${connection.channel.name} (in ${connection.channel.guild})`);
             disconnect(channel, connection, guild);
         }
     });
 }
 
 async function doReply(msg, reply) {
-    let identifyingRoles = msg.member.roles
+    let identifyingRoles = msg.member.roles.cache
             .filter(role => role.mentionable && role.members.size === 1);
 
     if (identifyingRoles.size) {
-        msg.channel.send(
+        return msg.channel.send(
             '<@&' + identifyingRoles.random().id + '>, ' + reply.replace(/^[ ]*/, ''),
             {split: true}
         );
-        return;
     }
 
     // If the code comes to here, there is no unique role for the member, thus simply replying.
-    msg.reply(reply);
+    await msg.reply(reply);
 }
 
 function playForUser(user) {
     grabChannels()
             .filter(channel => channel.members.has(user.id))
-            .forEach(ch => play(ch));
+            .forEach(ch => play(ch).catch(err));
 }
 
 client.on('ready', () => {
@@ -262,7 +275,7 @@ client.on('ready', () => {
         });
         previous_empty.diff(empty_channels).forEach(channel => {
             log(`Target acquired in ${channel.name} (in ${channel.guild})`);
-            play(channel);
+            play(channel).catch(err);
         });
 
     }, 100);
@@ -276,11 +289,11 @@ let commands = [
         guild: '518091238524846131',
         action: msg => {
             if (fs.existsSync(configLocation)) {
-                let configFile = fs.readFileSync(configLocation, {encoding: 'utf8'});
+                let configFile = fs.readFileSync(configLocation, { encoding: 'utf8' });
                 config = JSON.parse(configFile);
-                msg.react('👍');
+                msg.react('👍').catch(err);
             } else {
-                msg.react('👎');
+                msg.react('👎').catch(err);
             }
         }
     },
@@ -294,7 +307,7 @@ let commands = [
             Object.assign(censoredConfig, config);
             delete censoredConfig.googleToken;
             delete censoredConfig.loginToken;
-            msg.channel.sendCode('json', JSON.stringify(censoredConfig, null, 2), {split: true});
+            msg.channel.send(JSON.stringify(censoredConfig, null, 2), {split: true, code: 'json'}).catch(err);
         }
     },
     {
@@ -325,11 +338,11 @@ let commands = [
                     if (guild.songs.some(song => song === guild.currentlyPlaying)) {
                         reprobSong(guild.currentlyPlaying);
                     }
-                    doReply(msg, "Oké, ik ga het " + prob + " spelen!");
+                    doReply(msg, `Oké, ik ga het ${prob} spelen!`).catch(err);
                 } else if (ytdl.validateURL(songId)) {
                     getSongName(ytdl.getURLVideoID(songId), (songName, error) => {
                         if (error) {
-                            doReply(msg, "Er is iets mis gegaan bij het ophalen van de naam van dit liedje!");
+                            doReply(msg, "Er is iets mis gegaan bij het ophalen van de naam van dit liedje!").catch(err);
                             return
                         }
 
@@ -340,15 +353,15 @@ let commands = [
                             guild.songs.push({title: songName, p: prob, ytdl: songId});
                             guild.songsTotal += frequencies[prob];
                         }
-                        doReply(msg, "Oké, ik ga het " + prob + " spelen!");
-                    });
+                        doReply(msg, `Oké, ik ga het ${prob} spelen!`).catch(err);
+                    }).catch(err);
                 } else {
                     let existingSong = guild.songs.find(song => song.title === songId);
                     if (existingSong) {
                         reprobSong(existingSong);
-                        doReply(msg, "Oké, ik ga het " + prob + " spelen!");
+                        doReply(msg, `Oké, ik ga het ${prob} spelen!`).catch(err);
                     } else {
-                        doReply(msg, "Ik weet niet welk nummer je bedoelt.");
+                        doReply(msg, "Ik weet niet welk nummer je bedoelt.").catch(err);
                     }
                 }
                 break;
@@ -360,18 +373,18 @@ let commands = [
                     if (guild.songs.some(song => song === guild.currentlyPlaying)) {
                         yeetSong(guild.currentlyPlaying);
                     }
-                    doReply(msg, "Oké, ik ga het niet meer spelen!");
+                    doReply(msg, "Oké, ik ga het niet meer spelen!").catch(err);
                 } else if (ytdl.validateURL(songId)) {
                     let existingSong = guild.songs.find(song => song.ytdl === songId);
                     if (existingSong) yeetSong(existingSong);
-                    doReply(msg, "Oké, ik ga het niet meer spelen!");
+                    doReply(msg, "Oké, ik ga het niet meer spelen!").catch(err);
                 } else {
                     let existingSong = guild.songs.find(song => song.title === songId);
                     if (existingSong) {
                         yeetSong(existingSong);
-                        doReply(msg, "Oké, ik ga het niet meer spelen!");
+                        doReply(msg, "Oké, ik ga het niet meer spelen!").catch(err);
                     } else {
-                        doReply(msg, "Ik weet niet welk nummer je bedoelt.");
+                        doReply(msg, "Ik weet niet welk nummer je bedoelt.").catch(err);
                     }
                 }
                 break;
@@ -384,14 +397,15 @@ let commands = [
         regex: /^(stop|STOP)( met spelen)?[1!]*$/,
         simple: 'stop!',
         help: 'Geike stopt met spelen als ze in een channel zit',
-        action: msg => {
-            msg.guild.channels.forEach(channel => {
-                if (channel.type === "voice" && channel['members'].get(config.userId)) {
-                    msg.react('🙄');
-                    doReply(msg, 'Oké 😞');
-                    disconnect(channel);
-                }
-            });
+        action: (msg, _m, guild) => {
+            if (!guild.dynamic.connection) {
+                playing_guilds.delete(msg.channel.guild.id);
+                msg.react('🤐').catch(err);
+                return;
+            }
+            msg.react('🙄').catch(err);
+            doReply(msg, 'Oké 😞').catch(err);
+            disconnect(guild.dynamic.connection.channel, undefined, guild);
         }
     },
     {
@@ -400,63 +414,55 @@ let commands = [
         help: 'Geike legt uit wat ze allemaal kan',
         action: (msg, _m, guild, commands) => {
             doReply(msg, "\n" + commands
-                .filter(cmd => (!cmd.guild || cmd.guild == msg.guild.id) && cmd.help)
+                .filter(cmd => (!cmd.guild || cmd.guild === msg.guild.id) && cmd.help)
                 .map(cmd => guild.cmdPrefix + ' ' + cmd.simple + ' ➡️ ' + cmd.help.replace('!geike', guild.cmdPrefix))
                 .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
                 .join('\n')
-            );
+            ).catch(err);
         }
     },
     {
         regex: /^(fluister|zachter|ZACHTER|STILTE)[!1]*$/,
         simple: '{fluister|zachter}',
         help: 'Geike zal zich proberen iets meer in toom te houden',
-        action: msg => {
-            msg.guild.channels.forEach(channel => {
-                if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
+        action: (msg, _m, guild) => {
+            const connection = guild.dynamic.connection;
+            const channel = connection.channel;
 
-                let conn = channel.connection;
-                if (!conn) return;
+            let dispatcher = connection.dispatcher;
+            if (!dispatcher) return;
 
-                let dispatcher = conn.dispatcher;
-                if (!dispatcher) return;
-
-                if (dispatcher.volume === 0.5) {
-                    doReply(msg, 'Ik ben al zo stil als ik kan zijn');
-                } else if (dispatcher.volume === 1) {
-                    doReply(msg, 'Ik zal zachter proberen te zijn');
-                    dispatcher.setVolume(0.5);
-                } else if (dispatcher.volume === 2) {
-                    doReply(msg, 'Ik zal stoppen met schreeuwen');
-                    dispatcher.setVolume(1);
-                }
-            });
+            if (dispatcher.volume === 0.5) {
+                doReply(msg, 'Ik ben al zo stil als ik kan zijn').catch(err);
+            } else if (dispatcher.volume === 1) {
+                doReply(msg, 'Ik zal zachter proberen te zijn').catch(err);
+                dispatcher.setVolume(0.5);
+            } else if (dispatcher.volume === 2) {
+                doReply(msg, 'Ik zal stoppen met schreeuwen').catch(err);
+                dispatcher.setVolume(1);
+            }
         }
     },
     {
         regex: /^(harder|HARDER|SCHREEUW)[!1]*$/,
         simple: 'SCHREEUW',
         help: 'Geike laat luidkeels haar fantastische geluid horen',
-        action: msg => {
-            msg.guild.channels.forEach(channel => {
-                if (channel.type !== 'voice' || !channel['members'].get(config.userId)) return;
+        action: (msg, _m, guild) => {
+            const connection = guild.dynamic.connection;
+            const channel = connection.channel;
 
-                let conn = channel.connection;
-                if (!conn) return;
+            let dispatcher = connection.dispatcher;
+            if (!dispatcher) return;
 
-                let dispatcher = conn.dispatcher;
-                if (!dispatcher) return;
-
-                if (dispatcher.volume === 2) {
-                    doReply(msg, 'Ik schreeuw al zo hard als ik kan');
-                } else if (dispatcher.volume === 1) {
-                    doReply(msg,'Ik zal zo hard schreeuwen als ik kan');
-                    dispatcher.setVolume(2);
-                } else if (dispatcher.volume === 0.5) {
-                    doReply(msg, 'Ik zal wat luider zijn')
-                    dispatcher.setVolume(1);
-                }
-            });
+            if (dispatcher.volume === 2) {
+                doReply(msg, 'Ik schreeuw al zo hard als ik kan').catch(err);
+            } else if (dispatcher.volume === 1) {
+                doReply(msg,'Ik zal zo hard schreeuwen als ik kan').catch(err);
+                dispatcher.setVolume(2);
+            } else if (dispatcher.volume === 0.5) {
+                doReply(msg, 'Ik zal wat luider zijn').catch(err);
+                dispatcher.setVolume(1);
+            }
         }
     },
     {
@@ -469,7 +475,7 @@ let commands = [
         simple: 'waar ben je',
         help: 'Geike vertelt op welke server ze draait',
         guild: '518091238524846131',
-        action: msg => doReply(msg, os.hostname())
+        action: msg => doReply(msg, os.hostname()).catch(err)
     },
     {
         regex: /^luister (teef|bitch)$/,
@@ -483,18 +489,30 @@ let commands = [
         simple: 'wat kan je allemaal spelen',
         help: 'Geike stuurt een lijst van alles dat ze kan spelen en hoe vaak',
         action: (msg, _m, guild) => {
-            msg.channel.send(new Discord.RichEmbed()
-                .setColor([75, 83, 75])
-                .setTitle('Nummers die ik kan spelen')
-                .setDescription(guild.songs
-                    .map(s =>
-                        s.title + ' — ' + s.p
-                        + ' (' + (frequencies[s.p] / guild.songsTotal * 100).toFixed() + '%)'
-                    )
-                    .join('\n')
-                )
-                .setFooter('Ik kan ' + guild.songs.length + ' nummers spelen')
-            );
+            function makeEmbed(i, num) {
+                return new Discord.MessageEmbed()
+                  .setColor([75, 83, 75])
+                  .setTitle('Nummers die ik kan spelen')
+                  .setFooter(`Ik kan ${guild.songs.length} nummers spelen${num > 1 ? `${i + 1}/${num}` : ''}`);
+            }
+
+            function formatSong(s) {
+                return `${s.title} — ${s.p} (${(frequencies[s.p] / guild.songsTotal * 100).toFixed()}%)`;
+            }
+
+            let subsonglists = [''];
+            for (let song of guild.songs) {
+                fmtSong = formatSong(song);
+                if (subsonglists[subsonglists.length - 1].length + fmtSong.length < 2000) {
+                    subsonglists[subsonglists.length - 1] += '\n' + fmtSong;
+                } else {
+                    subsonglists.push(fmtSong);
+                }
+            }
+
+            for (let songlist of subsonglists) {
+                msg.channel.send({embed: makeEmbed().setDescription(songlist)}).catch(err);
+            }
         }
     },
     {
@@ -518,13 +536,13 @@ let commands = [
                         disconnect(channel);
                     }
                     msg.react('😢').catch(err);
-                    doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen');
+                    doReply(msg, 'Oké, ik zal niet meer in ' + chan + ' zingen').catch(err);
                 } else {
-                    doReply(msg, 'ik mocht daar al niet meer zingen van iemand 🙄');
+                    doReply(msg, 'ik mocht daar al niet meer zingen van iemand 🙄').catch(err);
                 }
             } else {
                 log(`The channel that was trying to be reached was ${chan}`);
-                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan).catch(err);
             }
         }
     },
@@ -538,13 +556,13 @@ let commands = [
                 const idx = guild.blacklist.indexOf(chan);
                 if (idx !== -1) {
                     guild.blacklist.splice(idx, 1);
-                    doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan);
+                    doReply(msg, 'Ik zal mijn zangkunsten weer komen vertonen in ' + chan).catch(err);
                 } else {
-                    doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳');
+                    doReply(msg, 'Ik dacht dat ik nog in ' + chan + ' mocht spelen 😳').catch(err);
                 }
             } else {
                 log(`The channel that was trying to be reached was ${chan}`);
-                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan);
+                doReply(msg, 'ik begrijp niet welk kanaal je bedoelt met ' + chan).catch(err);
             }
         }
     },
@@ -557,7 +575,7 @@ let commands = [
             if (!guild.currentlyPlaying) {
                 playForUser(msg.author);
             }
-            doReply(msg, "Oké, ik zal blijven spelen!");
+            doReply(msg, "Oké, ik zal blijven spelen!").catch(err);
         }
     },
     {
@@ -567,31 +585,38 @@ let commands = [
         action: (msg, _m, guild) => {
             guild.radio = false;
             if (guild.currentlyPlaying) {
-                doReply(msg, "Oké, ik zal hierna stoppen met spelen!");
+                doReply(msg, "Oké, ik zal hierna stoppen met spelen!").catch(err);
             } else {
-                doReply(msg, "Oké, ik zal de volgende keer maar één nummer spelen!");
+                doReply(msg, "Oké, ik zal de volgende keer maar één nummer spelen!").catch(err);
             }
         }
     },
     {
         regex: /^(volgende|VOLGENDE)[1!]*$/,
         simple: 'volgende',
-        help: 'Geike zingt een ander nummer',
+        help: 'Geike speelt een ander nummer',
         action: (msg, match, guild) => {
-            msg.guild.channels
-                .filter(ch => ch.type === 'voice' && ch.members.has(config.userId))
-                .forEach(ch => {
-                    let conn = ch.connection;
-                    if (!conn) return;
+            function replyNotPlaying() {
+                doReply(msg, 'Ik ben hier niet aan het spelen.').catch(err);
+            }
 
-                    let dispatcher = conn.dispatcher;
-                    if (!dispatcher) return;
+            const conn = guild.dynamic.connection;
+            if (!conn) {
+                replyNotPlaying();
+                return;
+            }
 
-                    dispatcher.end('next');
-                });
+            const dispatcher = conn.dispatcher;
+            if (!dispatcher) {
+                replyNotPlaying();
+                return;
+            }
+
+            guild.dynamic.nextEndedDispatcher = true;
+            dispatcher.end();
 
             if (match[1] === 'VOLGENDE') {
-                doReply(msg, 'Het is voor de kerk lieverd');
+                doReply(msg, 'Het is voor de kerk lieverd').catch(err);
             }
         }
     },
@@ -602,16 +627,16 @@ let commands = [
         action: (msg, _m, guild) => {
             let currentlyPlaying = guild.currentlyPlaying;
             if (currentlyPlaying) {
-                doReply(msg, `Ik ben momenteel ${currentlyPlaying.title} aan het spelen. Ik speel dit ${currentlyPlaying.p}.`);
+                doReply(msg, `Ik ben momenteel ${currentlyPlaying.title} aan het spelen. Ik speel dit ${currentlyPlaying.p}.`).catch(err);
             } else {
-                doReply(msg, 'Ik ben momenteel niet aan het spelen')
+                doReply(msg, 'Ik ben momenteel niet aan het spelen').catch(err);
             }
         }
     },
     {
         regex: /^braaf$/,
         simple: 'braaf',
-        help: 'Geike vind het leuk als je haar braaf noemt',
+        help: 'Geike vindt het leuk als je haar braaf noemt',
         action: msg => {
             msg.react('🐶').catch(err);
         }
@@ -625,15 +650,15 @@ let commands = [
             let songTitle = match[1].trim();
             let song = guild.songs.find(song => song.title.trim() === songTitle);
             if (!currentlyPlaying) {
-                doReply(msg, 'Ik ben momenteel nergens aan het spelen');
+                doReply(msg, 'Ik ben momenteel nergens aan het spelen').catch(err);
             } else if (currentlyPlaying.title === songTitle){
-                doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen');
+                doReply(msg, 'Ik ben momenteel al ' + songTitle + ' aan het spelen').catch(err);
             } else if (!song) {
-                doReply(msg, 'Ik ken het lied ' + songTitle + ' niet');
+                doReply(msg, 'Ik ken het lied ' + songTitle + ' niet').catch(err);
             } else {
                 grabChannels().forEach(channel => {
                     if (channel['members'].get(config.userId) !== undefined) {
-                        play(channel, undefined, song);
+                        play(channel, undefined, song).catch(err);
                     }
                 });
             }
@@ -647,9 +672,9 @@ let commands = [
             let newName = match[1].trim();
             if (newName) {
                 guild.cmdPrefix = newName;
-                doReply(msg, `Oké, voortaan luister ik naar ${newName}`);
+                doReply(msg, `Oké, voortaan luister ik naar ${newName}`).catch(err);
             } else {
-                doReply(msg, "Dat is geen naam waar ik naar kan luisteren");
+                doReply(msg, "Dat is geen naam waar ik naar kan luisteren").catch(err);
             }
         }
     },
@@ -659,7 +684,7 @@ let commands = [
         help: 'Geike vertelt in welke guilds ze aan het spelen is',
         guild: '518091238524846131',
         action: msg => {
-            doReply(msg, Array.from(playing_guilds).join('; '));
+            doReply(msg, Array.from(playing_guilds).join('; ')).catch(err);
         }
     },
     {
@@ -678,7 +703,7 @@ const magicCommands = [
         regex: /^omw$/,
         guild: f00fGuildId,
         action: msg => {
-            doReply(msg, 'Auke stijl?');
+            doReply(msg, 'Auke stijl?').catch(err);
         }
     }
 ];
@@ -710,14 +735,14 @@ client.on('message', msg => {
     const anyMagicSucceeded = tryCommands(magicCommands, guildId, magicCmdString, msg, guild);
 
     if (!guild.cmdPrefix) guild.cmdPrefix = '!geike';
-    if (!msg.content.startsWith(guild.cmdPrefix) || msg.author.id === config.userId) return;
+    if (!msg.content.startsWith(guild.cmdPrefix + ' ') || msg.author.id === config.userId) return;
 
     let cmdString = msg.content.substring(guild.cmdPrefix.length).trim();
     let anySucceeded = tryCommands(commands, guildId, cmdString, msg, guild);
 
-    if (!anySucceeded) doReply(msg, "Ik weet niet wat je daarmee bedoelt...");
+    if (!anySucceeded && !anyMagicSucceeded) doReply(msg, "Ik weet niet wat je daarmee bedoelt...").catch(err);
 });
-client.login(config.loginToken);
+client.login(config.loginToken).catch(err);
 
 process.on('SIGTERM', () => {
     saveConfig();
