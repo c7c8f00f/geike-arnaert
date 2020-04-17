@@ -16,6 +16,6 @@ COPY package*.json ./
 
 RUN npm install
 
-COPY *.js *.wav *.mp3 ./
+COPY **.js *.wav *.mp3 ./
 
 CMD ["node", "geike2.js"]
