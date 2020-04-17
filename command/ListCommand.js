@@ -10,13 +10,13 @@ export default class ListCommand extends Command {
     this.messageSender = messageSender;
     this.songListSender = songListSender;
 
-    this.regex = /^(bieb|bibliotheek)$/i;
+    this.regex = /^(bieb|bibliotheek)( volledig)?$/i;
     this.simple = 'bieb';
     this.help = 'Geeft de volledige lijst van nummers in de bibliotheek';
   }
 
   async action(msg, match, guild) {
     const songs = guild.config.songs;
-    return this.songListSender.sendList(msg, songs, match[1]);
+    return this.songListSender.sendList(msg, songs, match[1], true);
   }
 }

@@ -10,7 +10,7 @@ export default class PlaylistCommand extends Command {
     this.messageSender = messageSender;
     this.songListSender = songListSender;
 
-    this.regex = /^(afspeellijst|snitlys)$/i;
+    this.regex = /^(afspeellijst|snitlys)( volledig)?$/i;
     this.simple = 'afspeellijst';
     this.help = 'Toont de huidige afspeellijst';
   }
@@ -21,6 +21,6 @@ export default class PlaylistCommand extends Command {
       return this.messageSender.reply(msg, 'Er is op dit moment geen afspeellijst');
     }
 
-    return this.songListSender.sendList(msg, songs, match[1]);
+    return this.songListSender.sendList(msg, songs, match[1], !!match[2]);
   }
 }
