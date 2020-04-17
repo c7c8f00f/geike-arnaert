@@ -10,7 +10,7 @@ export default class PlayOverrideCommand extends Command {
     this.songPlayer = songPlayer;
     this.songFinder = songFinder;
 
-    this.regex = /^speel( hierna| nu)? (.*)$/i;
+    this.regex = /^speel( hierna| nu) (.*)$/i;
     this.simple = 'speel {hierna | nu} NUMMER';
     this.help = 'Forceert Geike om een ander nummer te spelen';
   }
