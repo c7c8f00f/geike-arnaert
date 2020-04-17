@@ -26,6 +26,7 @@ import PlayOverrideCommand from './command/PlayOverrideCommand.js';
 import CurrentSongCommand from './command/CurrentSongCommand.js';
 import BlacklistCommand from './command/BlacklistCommand.js';
 import UnBlacklistCommand from './command/UnBlacklistCommand.js';
+import ToggleRadioModeCommand from './command/ToggleRadioModeCommand.js';
 
 let config = loadConfig();
 
@@ -67,6 +68,7 @@ client.on('ready', () => {
     new PlayOverrideCommand(config, logger, messageSender, songPlayer, songFinder),
     new RemoveSongCommand(config, logger, messageSender, youtube, songFinder),
     new StopCommand(config, logger, songPlayer),
+    new ToggleRadioModeCommand(config, logger, messageSender),
     new UnBlacklistCommand(config, logger, client, messageSender),
   ];
 
