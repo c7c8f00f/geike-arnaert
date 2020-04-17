@@ -11,7 +11,7 @@ export default class RemoveSongCommand extends Command {
     this.songFinder = songFinder;
 
     this.regex = /^verwijder (.*)$/i;
-    this.simple = 'verwijder LINK';
+    this.simple = 'verwijder NUMMER';
     this.help = 'Verwijdert een nummer uit de bibliotheek';
     this.modifiesConfig = true;
   }

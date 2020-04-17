@@ -12,7 +12,7 @@ export default class AddSongCommand extends Command {
     this.songFinder = songFinder;
 
     this.regex = /^speel (vaak|soms|zelden) (.*)$/i;
-    this.simple = 'speel {vaak | soms | zelden} LINK';
+    this.simple = 'speel {vaak | soms | zelden} NUMMER';
     this.help = 'Voegt een number toe aan de bibliotheek of past de frequentie aan';
     this.modifiesConfig = true;
   }
