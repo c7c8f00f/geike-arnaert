@@ -60,7 +60,7 @@ export default class SongPlayer {
       // Handle dispatcher errors by resetting the connection
       dispatcher.on('error', err => {
         if (!guild.dispatcher) {
-          this.logger.info(`Double dispatcher error ${err} in ${channel.guild}${channel}?`);
+          this.logger.log(`Double dispatcher error ${err} in ${channel.guild}${channel}?`);
           return;
         }
 
