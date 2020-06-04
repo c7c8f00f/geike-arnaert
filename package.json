@@ -12,12 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "bubble-scatter": "^1.0.0",
-    "discord.js": "^12.1.1",
-    "fast-shuffle": "^2.0.1",
+    "discord.js": "^12.2.0",
+    "fast-shuffle": "^3.0.0",
     "node-opus": "^0.3.2",
-    "prism-media": "^1.2.1",
+    "prism-media": "^1.2.2",
     "sodium": "^3.0.2",
     "ssdeep.js": "0.0.2",
-    "ytdl-core": "^2.1.0"
+    "ytdl-core": "^3.1.1"
   }
 }
