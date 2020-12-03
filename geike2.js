@@ -19,7 +19,7 @@ import NextSongCommand from './command/NextSongCommand.js';
 import RemoveSongCommand from './command/RemoveSongCommand.js';
 import StopCommand from './command/StopCommand.js';
 import HelpCommand from './command/HelpCommand.js';
-import SongListSender from './command/SongListSender.js';
+import SongListSender from './SongListSender.js';
 import PlaylistCommand from './command/PlaylistCommand.js';
 import SongFinder from './SongFinder.js';
 import PlayOverrideCommand from './command/PlayOverrideCommand.js';

@@ -1,5 +1,5 @@
 import Discord from "discord.js";
-import frequencies from '../frequencies.js';
+import frequencies from './frequencies.js';
 
 export default class SongListSender {
   constructor(logger, client) {
