@@ -90,6 +90,7 @@ export default class SongPlayer {
         this.logger.err(e);
       }
       if (e.message !== 'force stop' && e.message !== 'interrupt') {
+        this.logger.info(`Received error with message ${e.message}, playing next...`)
         setTimeout(() => {
           this.play(channel, guild).catch(e => this.logger.err(e));
         }, 1000);
@@ -102,20 +103,27 @@ export default class SongPlayer {
     try {
       const playlist = guild.getPlaylist();
       const song = playlist.shift();
+
       this.logger.log(`Playing ${song.title} in ${channel.guild}${channel}`);
+
       const str = (await this._open(song)).pipe(new prism.opus.OggDemuxer());
+
       guild.currentSong = song;
       guild.currentStream = str;
       guild.currentChannel = channel;
+
       str.on('end', () => {
         if (guild.config.radio) {
-          this.logger.log(`Song ended, continuing in radio mode in ${channel.guild}${channel}`);
-          this.play(channel, guild).catch(e => this.logger.err(e));
+          setTimeout(() => {
+            this.logger.log(`Song ended, continuing in radio mode in ${channel.guild}${channel}`);
+            this.play(channel, guild).catch(e => this.logger.err(e));
+          }, 1000);
         } else {
           this.logger.log(`Song ended, disconnecting from ${channel.guild}${channel}`);
           channel.leave();
         }
       });
+
       str.on('error', handleError);
       str.pipe(guild.voicePipe, { end: false });
     } catch (ex) {
