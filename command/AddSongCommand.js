@@ -21,7 +21,7 @@ export default class AddSongCommand extends Command {
     const songRef = match[2].trim();
     const freq = match[1].trim();
 
-    let song = await this.songFinder.find(guild, songRef);
+    let song = await this.songFinder.find(msg, guild, songRef);
     if (!song) {
       return this.messageSender.reply(msg,
         `${songRef} staat niet in de lijst van nummers en is geen geldige YouTube video`
