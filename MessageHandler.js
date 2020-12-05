@@ -22,9 +22,23 @@ export default class MessageHandler {
     const anyMagicSucceeded = this._tryCommands(this.magicCommands, guildId, magicCmdString, msg, guild);
 
     if (!guild.config.cmdPrefix) guild.config.cmdPrefix = '!geike';
-    if (!msg.content.startsWith(guild.config.cmdPrefix + ' ') || msg.author.id === this.config.userId) return;
 
-    let cmdString = msg.content.substring(guild.config.cmdPrefix.length).trim();
+    const meMention = `<@!${this.config.userId}>`;
+
+    const legacyMentioned = msg.content.startsWith(guild.config.cmdPrefix + ' ');
+    const realMentioned = msg.content.startsWith(meMention);
+
+    const byMe = msg.author.id === this.config.userId;
+
+    if ((!legacyMentioned && !realMentioned) || byMe) return;
+
+    let cmdString;
+    if (legacyMentioned) {
+      cmdString = msg.content.substring(guild.config.cmdPrefix.length).trim();
+    } else if (realMentioned) {
+      cmdString = msg.content.substring(meMention.length).trim();
+    }
+
     let anySucceeded = this._tryCommands(this.commands, guildId, cmdString, msg, guild);
 
     if (!anySucceeded && !anyMagicSucceeded) {
