@@ -1,4 +1,5 @@
 import Discord from "discord.js";
+import CsvStringify from 'csv-stringify';
 import frequencies from './frequencies.js';
 
 export default class SongListSender {
@@ -54,14 +55,35 @@ export default class SongListSender {
   };
 
   async _sendAsAttachment(msg, songs, listType, songsTotal) {
-    let songLines = '';
+    let csvLines = '';
+    const csvStream = CsvStringify();
+    csvStream.write(['titel', 'frequentie', 'kans', 'toegevoegd door']);
+    csvStream.on('readable', () => {
+      let row;
+      while (row = csvStream.read()) {
+        csvLines += row;
+      }
+    });
+    csvStream.on('finish', () => {
+      const csvBuf = Buffer.from(csvLines);
+      return msg.channel.send({ files: [{
+          name: `${listType}-${new Date().toLocaleString('nl-NL')}.csv`,
+          attachment: csvBuf,
+        }] });
+    });
+
     for (let song of songs) {
-      songLines += await this._formatSong(song, songsTotal) + '\n';
+      console.log(song.by);
+      let user;
+      if (song.by) user = await this.client.users.fetch(song.by);
+      csvStream.write([
+        song.title,
+        song.p,
+        (frequencies[song.p] / songsTotal * 100).toFixed(2),
+        (user && user.tag) ? user.tag : ''
+      ]);
     }
-    const songLinesBuf = Buffer.from(songLines);
-    return msg.channel.send({ files: [{
-      name: `${listType}-${new Date().toLocaleString('nl-NL')}.txt`,
-      attachment: songLinesBuf,
-    }] });
+
+    csvStream.end();
   }
 }
