@@ -29,7 +29,11 @@ export default class YouTube {
         res.on('data', chunk => data += chunk);
         res.on('error', reject);
         res.on('end', () => {
-          resolve(JSON.parse(data).items[0].snippet.title);
+          try {
+            resolve(JSON.parse(data).items[0].snippet.title);
+          } catch(e) {
+            reject(e);
+          }
         });
       });
     });
