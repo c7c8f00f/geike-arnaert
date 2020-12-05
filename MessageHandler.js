@@ -57,6 +57,7 @@ export default class MessageHandler {
       this.messageSender.reply(msg, ex.message);
       console.error(ex);
     } else {
+      this.messageSender.reply(msg, 'Er is iets misgegaan');
       this.logger.err(ex);
     }
 
