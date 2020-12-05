@@ -1,5 +1,6 @@
 import { allOk } from '../assert.js';
 import Command from './Command.js';
+import UserFriendlyError from '../UserFriendlyError.js';
 
 export default class RemoveSongCommand extends Command {
   constructor(config, logger, messageSender, youtube, songFinder) {
@@ -28,9 +29,9 @@ export default class RemoveSongCommand extends Command {
 
     if (!song) {
       if (songRef !== 'dit') {
-        return this.messageSender.reply(msg, 'Er wordt op dit moment geen nummer gespeeld');
+        throw new UserFriendlyError('Er wordt op dit moment geen nummer gespeeld');
       } else {
-        return this.messageSender.reply(msg, `Er is geen nummer met naam of link ${songRef} in de bibliotheek`);
+        throw new UserFriendlyError(`Er is geen nummer met naam of link ${songRef} in de bibliotheek`);
       }
     }
 

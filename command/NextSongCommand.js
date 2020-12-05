@@ -1,5 +1,6 @@
 import { allOk } from '../assert.js';
 import Command from './Command.js';
+import UserFriendlyError from '../UserFriendlyError.js';
 
 export default class NextSongCommand extends Command {
   constructor(config, logger, messageSender) {
@@ -15,7 +16,7 @@ export default class NextSongCommand extends Command {
 
   async action(msg, match, guild) {
     if (!guild.currentStream) {
-      return this.messageSender.reply(msg, `Er wordt op dit moment niet gespeeld op deze server`);
+      throw new UserFriendlyError(`Er wordt op dit moment niet gespeeld op deze server`);
     }
 
     guild.currentStream.destroy(new Error('next'));

@@ -1,5 +1,6 @@
 import { storeConfig } from './config.js';
 import { allOk } from './assert.js';
+import UserFriendlyError from './UserFriendlyError.js';
 
 export default class MessageHandler {
   constructor(config, logger, messageSender, guildRepository, commands, magicCommands) {
@@ -41,13 +42,26 @@ export default class MessageHandler {
         try {
           cmd.action(msg, match, guild, comms).then(() => {
             if (cmd.modifiesConfig) storeConfig(this.config, this.logger);
-          }).catch(ex => this.logger.err(ex));
+          }).catch(ex => this._handleError(msg, ex));
         } catch (ex) {
-          this.logger.err(ex);
+          this._handleError(msg, ex)
         }
 
         return true;
       })
       .some(r => r);
+  }
+
+  _handleError(msg, ex) {
+    if (ex instanceof UserFriendlyError) {
+      this.messageSender.reply(msg, ex.message);
+      console.error(ex);
+    } else {
+      this.logger.err(ex);
+    }
+
+    if (ex.cause) {
+      this._handleError(msg, ex.cause)
+    }
   }
 };

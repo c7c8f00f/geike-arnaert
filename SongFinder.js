@@ -1,4 +1,5 @@
 import ssdeep from 'ssdeep.js';
+import UserFriendlyError from './UserFriendlyError.js';
 
 export default class SongFinder {
   constructor(config, logger, youtube, messageSender) {
@@ -48,9 +49,7 @@ export default class SongFinder {
     try {
       title = await this.youtube.getNameForId(id);
     } catch (ex) {
-      this.logger.err(`Unable to extract name for ID ${id}`);
-      this.logger.err(ex);
-      return this.messageSender.reply(msg, 'De naam van de video kan niet gevonden worden');
+      throw new UserFriendlyError('De naam van de video kan niet gevonden worden', ex);
     }
 
     return {

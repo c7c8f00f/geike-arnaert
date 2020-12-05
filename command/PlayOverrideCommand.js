@@ -1,5 +1,6 @@
 import { allOk } from '../assert.js';
 import Command from './Command.js';
+import UserFriendlyError from '../UserFriendlyError.js';
 
 export default class PlayOverrideCommand extends Command {
   constructor(config, logger, messageSender, songPlayer, songFinder) {
@@ -18,7 +19,7 @@ export default class PlayOverrideCommand extends Command {
   async action(msg, match, guild) {
     const vp = guild.voicePipe;
     if (!vp) {
-      return this.messageSender.reply(msg, 'Er wordt op dit moment niet gespeeld op deze server');
+      throw new UserFriendlyError('Er wordt op dit moment niet gespeeld op deze server');
     }
 
     const songRef = match[2].trim();
@@ -26,7 +27,7 @@ export default class PlayOverrideCommand extends Command {
 
     const song = await this.songFinder.find(msg, guild, songRef);
     if (!song) {
-      return this.messageSender.reply(msg, `${songRef} kan niet gevonden worden`);
+      throw new UserFriendlyError(`${songRef} kan niet gevonden worden`);
     }
 
     if (!song.inLibrary && msg.author) {

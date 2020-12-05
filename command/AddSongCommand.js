@@ -1,5 +1,6 @@
 import { allOk } from '../assert.js';
 import Command from './Command.js';
+import UserFriendlyError from '../UserFriendlyError.js';
 
 export default class AddSongCommand extends Command {
   constructor(config, logger, messageSender, youtube, songPlayer, songFinder) {
@@ -23,9 +24,7 @@ export default class AddSongCommand extends Command {
 
     let song = await this.songFinder.find(msg, guild, songRef);
     if (!song) {
-      return this.messageSender.reply(msg,
-        `${songRef} staat niet in de lijst van nummers en is geen geldige YouTube video`
-      );
+      throw new UserFriendlyError(`${songRef} staat niet in de lijst van nummers en is geen geldige YouTube video`);
     }
 
     song.p = freq;

@@ -1,5 +1,6 @@
 import { allOk } from '../assert.js';
 import Command from './Command.js';
+import UserFriendlyError from '../UserFriendlyError.js';
 
 export default class CurrentSongCommand extends Command {
   constructor(config, logger, client, messageSender) {
@@ -17,7 +18,7 @@ export default class CurrentSongCommand extends Command {
   async action(msg, match, guild) {
     const song = guild.currentSong;
     if (!song) {
-      return this.messageSender.reply(msg, 'Er wordt op dit moment geen nummer gespeeld');
+      throw new UserFriendlyError('Er wordt op dit moment geen nummer gespeeld');
     }
 
     let addedByStr = '';
