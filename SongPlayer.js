@@ -117,7 +117,7 @@ export default class SongPlayer {
           setTimeout(() => {
             this.logger.log(`Song ended, continuing in radio mode in ${channel.guild}${channel}`);
             this.play(channel, guild).catch(e => this.logger.err(e));
-          }, 1000);
+          }, 2000);
         } else {
           this.logger.log(`Song ended, disconnecting from ${channel.guild}${channel}`);
           channel.leave();
