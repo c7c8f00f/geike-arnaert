@@ -90,7 +90,7 @@ export default class SongPlayer {
         this.logger.err(e);
       }
       if (e.message !== 'force stop' && e.message !== 'interrupt') {
-        this.logger.info(`Received error with message ${e.message}, playing next...`)
+        this.logger.log(`Received error with message ${e.message}, playing next...`)
         setTimeout(() => {
           this.play(channel, guild).catch(e => this.logger.err(e));
         }, 1000);
