@@ -23,7 +23,7 @@ export default class RemoveSongCommand extends Command {
     if (songRef === 'dit') {
       song = guild.currentSong;
     } else {
-      song = await this.songFinder.find(guild, songRef);
+      song = await this.songFinder.find(msg, guild, songRef);
     }
 
     if (!song) {

@@ -24,7 +24,7 @@ export default class PlayOverrideCommand extends Command {
     const songRef = match[2].trim();
     const urgent = match[1].trim() === 'nu';
 
-    const song = await this.songFinder.find(guild, songRef);
+    const song = await this.songFinder.find(msg, guild, songRef);
     if (!song) {
       return this.messageSender.reply(msg, `${songRef} kan niet gevonden worden`);
     }

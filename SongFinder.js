@@ -10,7 +10,7 @@ export default class SongFinder {
     this.youtube = youtube;
   }
 
-  async find(guild, songRef) {
+  async find(msg, guild, songRef) {
     let song;
     let youtubeId;
     if (this.youtube.isValidUrl(songRef) || this.youtube.isValidId(songRef)) {
@@ -39,10 +39,10 @@ export default class SongFinder {
 
     if (!youtubeId) return undefined;
 
-    return this._findYoutubeSong(guild, songRef, youtubeId);
+    return this._findYoutubeSong(msg, guild, songRef, youtubeId);
   }
 
-  async _findYoutubeSong(guild, songRef, youtubeId) {
+  async _findYoutubeSong(msg, guild, songRef, youtubeId) {
     const id = youtubeId;
     let title;
     try {
