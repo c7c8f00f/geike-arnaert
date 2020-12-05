@@ -73,7 +73,6 @@ export default class SongListSender {
     });
 
     for (let song of songs) {
-      console.log(song.by);
       let user;
       if (song.by) user = await this.client.users.fetch(song.by);
       csvStream.write([
