@@ -11,6 +11,8 @@ export default class MessageHandler {
     this.commands = commands;
     this.magicCommands = magicCommands;
 
+    this.guildOverride = /\[guild=(\d+)\]/gi;
+
     allOk(arguments);
   }
 
@@ -37,6 +39,16 @@ export default class MessageHandler {
       cmdString = msg.content.substring(guild.config.cmdPrefix.length).trim();
     } else if (realMentioned) {
       cmdString = msg.content.substring(meMention.length).trim();
+    }
+
+    if (msg.guild.id === '518091238524846131') {
+      const guildOverrideMatch = this.guildOverride.exec(cmdString);
+      if (guildOverrideMatch) {
+        guildId = `${guildOverrideMatch[1]}`;
+        guild = this.guildRepository.find(guildId);
+        cmdString = cmdString.substring(guildOverrideMatch[0].length).trim();
+        this.messageSender.reply(msg, `⚠️ Opdracht wordt uitgevoerd als guild ${guildId}`)
+      }
     }
 
     let anySucceeded = this._tryCommands(this.commands, guildId, cmdString, msg, guild);
