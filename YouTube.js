@@ -30,7 +30,9 @@ export default class YouTube {
         res.on('error', reject);
         res.on('end', () => {
           try {
-            resolve(JSON.parse(data).items[0].snippet.title);
+            const reply = JSON.parse(data);
+            const snippet = reply.items[0].snippet;
+            resolve(`${snippet.title} - ${snippet.channelTitle}`);
           } catch(e) {
             reject(e);
           }
