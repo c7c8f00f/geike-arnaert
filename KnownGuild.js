@@ -24,6 +24,7 @@ export default class KnownGuild {
     this.config = config;
     this.currentlyPlaying = undefined;
     this.playlist = undefined;
+    this.songHistory = [];
   }
 
   isChannelBlacklisted(channel) {

@@ -1,5 +1,7 @@
+import fs from 'fs';
 import Discord from 'discord.js';
 import ssdeep from 'ssdeep.js';
+import { parseISO } from 'date-fns';
 import { loadConfig, storeConfig } from './config.js';
 import Logger from './Logger.js';
 import ChannelWatcher from './ChannelWatcher.js';
@@ -19,6 +21,7 @@ import NextSongCommand from './command/NextSongCommand.js';
 import RemoveSongCommand from './command/RemoveSongCommand.js';
 import StopCommand from './command/StopCommand.js';
 import HelpCommand from './command/HelpCommand.js';
+import HistoryCommand from './command/HistoryCommand.js';
 import SongListSender from './SongListSender.js';
 import PlaylistCommand from './command/PlaylistCommand.js';
 import SongFinder from './SongFinder.js';
@@ -70,6 +73,7 @@ client.on('ready', () => {
     new StopCommand(config, logger, songPlayer),
     new ToggleRadioModeCommand(config, logger, messageSender),
     new UnBlacklistCommand(config, logger, client, messageSender),
+    new HistoryCommand(config, logger, songListSender),
   ];
 
   commands.push(new HelpCommand(config, logger, messageSender, commands));
@@ -89,6 +93,16 @@ client.on('ready', () => {
         if (!song.titleHash) {
           song.titleHash = ssdeep.digest(song.title.toLowerCase());
           console.log(`Hashed title ${song.title} to ${song.titleHash}`);
+        }
+
+        if (!song.timestamp) {
+          const cfp = songPlayer.getCacheFilePath(song);
+          fs.stat(cfp, (err, stats) => {
+            if (err) return;
+            song.timestamp = new Date(stats.mtimeMs);
+          });
+        } else {
+          song.timestamp = parseISO(song.timestamp);
         }
       }
     }

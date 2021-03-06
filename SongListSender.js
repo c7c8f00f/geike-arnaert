@@ -1,6 +1,8 @@
 import Discord from "discord.js";
 import CsvStringify from 'csv-stringify';
 import frequencies from './frequencies.js';
+import { formatRelative, formatISO, differenceInCalendarDays } from 'date-fns';
+import nl from 'date-fns/locale/nl/index.js';
 
 export default class SongListSender {
   constructor(logger, client) {
@@ -8,15 +10,19 @@ export default class SongListSender {
     this.client = client;
   }
 
-  async sendList(msg, songs, listType, allowAttachment = false) {
+  async sendList(msg, songs, listType, allowAttachment = false, calcFreq = true, isHistory = false) {
     const songsTotal = songs.map(s => frequencies[s.p]).reduce((a, b) => a + b, 0);
+
+    const now = new Date();
 
     let subsonglists = '';
     let included = 0;
+    let idx = 0;
     for (let song of songs) {
-      const fmtSong = await this._formatSong(song, songsTotal);
+      ++idx;
+      const fmtSong = await this._formatSong(song, songsTotal, calcFreq, isHistory, now);
       if (subsonglists.length + fmtSong.length < 2000) {
-        subsonglists += '\n' + fmtSong;
+        subsonglists += `\n${idx}. ${fmtSong}`;
         ++included;
       } else {
         if (allowAttachment) {
@@ -38,26 +44,40 @@ export default class SongListSender {
         .setColor([75, 83, 75])
         .setTitle(`${listType}${partialText}`)
         .setDescription(subsonglists)
-        .setFooter(`Er zijn ${songs.length} nummers in de ${listType}${displayedText}`);
+        .setFooter(
+            `Er ${songs.length === 1 ? 'is' : 'zijn'} ${songs.length} nummer${songs.length === 1 ? '' : 's'} in de ${listType}${displayedText}`
+        );
 
     return msg.channel.send({ embed }).catch(e => this.logger.err(e));
   }
 
-  async _formatSong(s, songsTotal) {
+  async _formatSong(s, songsTotal, calcFreq, isHistory, now) {
+    let dateStr = '';
+    if (s.timestamp) {
+      const diff = differenceInCalendarDays(s.timestamp, now);
+      dateStr = `, ${isHistory ? 'gespeeld' : 'toegevoegd'}${diff < -6 ? ' op' : ''} ${formatRelative(s.timestamp, now, { locale: nl })}`;
+    }
+
     let addedByStr = '';
     if (s.by) {
       let user = await this.client.users.fetch(s.by);
       if (user && user.tag) {
-        addedByStr = ` — toegevoegd door ${user.tag}`;
+        addedByStr = `${(isHistory && s.timestamp) ? ', toegevoegd' : ''} door ${user.tag}`;
       }
     }
-    return `${s.title} — ${s.p} (${(frequencies[s.p] / songsTotal * 100).toFixed(2)}%)${addedByStr}`;
+
+    let freqStr = '';
+    if (calcFreq) {
+      freqStr = ` (${(frequencies[s.p] / songsTotal * 100).toFixed(2)}%)`;
+    }
+
+    return `${s.title} — ${s.p}${freqStr}${dateStr}${addedByStr}`;
   };
 
   async _sendAsAttachment(msg, songs, listType, songsTotal) {
     let csvLines = '';
     const csvStream = CsvStringify();
-    csvStream.write(['titel', 'frequentie', 'kans', 'toegevoegd door']);
+    csvStream.write(['titel', 'frequentie', 'kans', 'toegevoegd door', 'toegevoegd op']);
     csvStream.on('readable', () => {
       let row;
       while (row = csvStream.read()) {
@@ -79,7 +99,8 @@ export default class SongListSender {
         song.title,
         song.p,
         (frequencies[song.p] / songsTotal * 100).toFixed(2),
-        (user && user.tag) ? user.tag : ''
+        (user && user.tag) ? user.tag : '',
+        song.timestamp ? formatISO(song.timestamp) : '',
       ]);
     }
 

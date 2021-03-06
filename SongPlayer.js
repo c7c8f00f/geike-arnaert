@@ -104,6 +104,13 @@ export default class SongPlayer {
       const playlist = guild.getPlaylist();
       const song = playlist.shift();
 
+      const csong = this._cloneSong(song);
+      csong.timestamp = new Date();
+
+      if (guild.songHistory.push(csong) > 10) {
+        guild.songHistory.shift();
+      }
+
       this.logger.log(`Playing ${song.title} in ${channel.guild}${channel}`);
 
       const str = (await this._open(song)).pipe(new prism.opus.OggDemuxer());
@@ -128,6 +135,17 @@ export default class SongPlayer {
       str.pipe(guild.voicePipe, { end: false });
     } catch (ex) {
       handleError(ex);
+    }
+  }
+
+  _cloneSong(song) {
+    return {
+      title: song.title,
+      by: song.by,
+      p: song.p,
+      file: song.file,
+      ytdl: song.ytdl,
+      timestamp: song.timestamp,
     }
   }
 
@@ -282,5 +300,17 @@ export default class SongPlayer {
     const h = crypto.createHash('sha3-256');
     h.update(path);
     return `${CACHE_PATH}/${h.digest('hex')}.opus`;
+  }
+
+  getCacheFilePath(song) {
+    let path;
+    try {
+      let o = this._getSongPath(song);
+      path = o.path;
+    } catch (ex) {
+      reject(ex);
+    }
+
+    return this._getCacheFilePath(path);
   }
 };
