@@ -1,4 +1,5 @@
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import Discord from 'discord.js';
 import ssdeep from 'ssdeep.js';
 import { parseISO } from 'date-fns';
@@ -81,6 +82,8 @@ client.on('ready', () => {
   const messageHandler = new MessageHandler(config, logger, messageSender, guildRepo, commands, []);
   client.on('message', msg => messageHandler.handle(msg));
 
+  let referencedCacheEntries = new Set();
+
   (async () => {
     for (let guild of Object.values(config.guilds)) {
       for (let song of guild.songs) {
@@ -95,8 +98,10 @@ client.on('ready', () => {
           console.log(`Hashed title ${song.title} to ${song.titleHash}`);
         }
 
+        const cfp = songPlayer.getCacheFilePath(song);
+        referencedCacheEntries.add(cfp);
+
         if (!song.timestamp) {
-          const cfp = songPlayer.getCacheFilePath(song);
           fs.stat(cfp, (err, stats) => {
             if (err) return;
             song.timestamp = new Date(stats.mtimeMs);
@@ -106,6 +111,18 @@ client.on('ready', () => {
         }
       }
     }
+
+    const cachePath = '/var/lib/geike/cache';
+    const cacheFilenames = await fsPromises.readdir(cachePath);
+    await Promise.all(
+        cacheFilenames
+            .map(f => `${cachePath}/${f}`)
+            .filter(f => !referencedCacheEntries.has(f))
+            .map(f => {
+              console.log(`Removing stale cache entry ${f}`)
+              return fsPromises.rm(f);
+            })
+    );
   })().catch(e => logger.err(e));
 
   logger.log(`Logged in as ${client.user.tag}!`);
