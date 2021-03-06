@@ -32,6 +32,7 @@ export default class AddSongCommand extends Command {
     if (!song.inLibrary) {
       if (msg.author) song.by = msg.author.id;
       song.inLibrary = true;
+      song.timestamp = new Date();
       guild.config.songs.push(song);
     }
 
