@@ -1,5 +1,6 @@
 import fs from 'fs';
 import fsPromises from 'fs/promises';
+import process from 'process';
 import Discord from 'discord.js';
 import ssdeep from 'ssdeep.js';
 import { parseISO } from 'date-fns';
@@ -132,7 +133,14 @@ client.on('ready', () => {
   logger.log(`Logged in as ${client.user.tag}!`);
   cw.start();
 
-  setInterval(() => storeConfig(config), 15000);
+  const storeConfigTimer = setInterval(() => storeConfig(config), 15000);
+
+  process.on('SIGTERM', () => {
+      clearInterval(storeConfigTimer);
+      cw.stop();
+      client.destroy();
+      process.exit();
+  });
 });
 
 client.login(config.loginToken).catch(console.error);

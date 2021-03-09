@@ -11,7 +11,7 @@ export default class MessageHandler {
     this.commands = commands;
     this.magicCommands = magicCommands;
 
-    this.guildOverride = /\[guild=(\d+)\]/gi;
+    this.guildOverride = /\[guild=(\d+)\]/i;
 
     allOk(arguments);
   }
