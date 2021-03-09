@@ -31,6 +31,8 @@ import CurrentSongCommand from './command/CurrentSongCommand.js';
 import BlacklistCommand from './command/BlacklistCommand.js';
 import UnBlacklistCommand from './command/UnBlacklistCommand.js';
 import ToggleRadioModeCommand from './command/ToggleRadioModeCommand.js';
+import ThankCommand from './command/ThankCommand.js';
+import VersionCommand from './command/VersionCommand.js';
 
 let config = loadConfig();
 
@@ -75,6 +77,8 @@ client.on('ready', () => {
     new ToggleRadioModeCommand(config, logger, messageSender),
     new UnBlacklistCommand(config, logger, client, messageSender),
     new HistoryCommand(config, logger, songListSender),
+    new ThankCommand(config, logger, messageSender),
+    new VersionCommand(config, logger, messageSender),
   ];
 
   commands.push(new HelpCommand(config, logger, messageSender, commands));

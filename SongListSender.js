@@ -55,7 +55,8 @@ export default class SongListSender {
     let dateStr = '';
     if (s.timestamp) {
       const diff = differenceInCalendarDays(s.timestamp, now);
-      dateStr = `, ${isHistory ? 'gespeeld' : 'toegevoegd'}${diff < -6 ? ' op' : ''} ${formatRelative(s.timestamp, now, { locale: nl })}`;
+      const tsStr = formatRelative(s.timestamp, now, { locale: nl, weekStartsOn: 1 });
+      dateStr = `, ${isHistory ? 'gespeeld' : 'toegevoegd'}${diff < -6 ? ' op' : ''} ${tsStr}`;
     }
 
     let addedByStr = '';
